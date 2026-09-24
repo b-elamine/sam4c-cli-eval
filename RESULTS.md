@@ -9,12 +9,12 @@
 | | |
 |---|---|
 | Subjects | 7 public systems: 4 Kubernetes (Online Boutique, Bank of Anthos, Sock Shop, TeaStore), 3 Compose (OpenTelemetry Demo, Hotel Reservation, Social Network) |
-| Ground truth | the systems' own deployment files (2026-07-31 versions) and service source code |
-| Models | one architecture file + one rule file per system, every unit of the deployment files modeled |
-| Rules | one rubric for all: the session or account store is reachable from the entry only through its own domain (multi-hop `Isolation` with `via`); `Availability medium` on the user-facing path; `Confidentiality` where the call graph carries payment or ledger data; `Authentication` and `Authorization` only where the system has them |
+| Ground truth | the systems' own deployment files + service source code |
+| Models | 1 arch file + 1 rule file per system, every unit modeled |
+| Rules | one rubric for all 7, see `METHODOLOGY.md` |
 | Checks | 11 (3 always-on, 8 rule-dependent) |
-| Baseline | none: no tool checks the design model before generation |
-| Timing | median of 10 runs after 2 warm-up runs, JVM start-up included |
+| Baseline | none yet |
+| Timing | median of 10 runs, 2 warm-ups, JVM start-up included |
 
 ## 2. The 7 systems
 
@@ -61,7 +61,7 @@ C = confirmed | P = partial (exposure true, the app has a login on some routes) 
 | Insufficient replicas | 28 | 28 | 0 | 0 | 0 | 100% | 100% |
 | **All** | **45** | **39** | 4 | 1 | 1 | **87%** | **98%** |
 
-Every finding with its `path:line` evidence: `findings-explained.md`.
+Every finding with its `path:line` evidence: `FINDINGS.md`.
 
 ## 5. Models checked against the repos
 
@@ -85,7 +85,7 @@ python3 scripts/reproduce.py /path/to/sam4c-cli.jar       # 15 checks, from this
 
 ## 7. Limits
 
-- Findings were checked by the author, not an independent labeller. Recall on real systems is not measured.
-- Multi-hop `Isolation` with `via` is used on all 7 real systems (2 findings, 5 silent). Weak-hop chaining (no `via`) is not exercised anywhere in this folder.
-- `Availability medium` everywhere, so zone spread is not exercised anywhere in this folder.
-- No baseline comparison against an existing config scanner yet, and no synthetic/mutation examples — every number here comes from a real, unmodified system.
+- One labeller (the author), no independent check. Recall not measured.
+- `via` Isolation runs on all 7 (2 findings, 5 silent); weak-hop chaining not exercised here.
+- `Availability medium` everywhere, zone spread not exercised here.
+- No baseline against another tool yet, no synthetic examples.

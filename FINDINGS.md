@@ -1,14 +1,16 @@
-# Findings explained and verified against the source repos
+# Findings, verified against the source repos
 
-Written 2026-09-20, tool commit `7ba7166` at the time, re-verified against tool commit `9850fbd564c0e9db9504627f53f99ce12268a978` (the pinned commit for this evaluation, see `tool/README.md`) on 2026-09-24 with no change in results. All 7 real systems were cloned; the 3 repos that moved after the modeling date are checked out at their 2026-07-31 commit, the other 4 have no newer commits and every finding was checked against the repo files. Evidence is `path:line` inside the clone, and every path below is the real path in the repo. From this evaluation folder, reproduce with `python3 scripts/reproduce.py <path-to-jar>`.
+All 7 systems cloned and checked against the repo files, re-verified at tool
+commit `9850fbd564c0e9db9504627f53f99ce12268a978` on 2026-09-24, no change
+in results. Every path below is the real repo path. Manifests are vendored
+in `real-systems/inputs/manifests/`, cited source files in
+`real-systems/inputs/evidence/`. Reproduce: `python3 scripts/reproduce.py <path-to-jar>`.
 
-Every deployment manifest cited below is vendored verbatim in `real-systems/inputs/manifests/`, and every service source file cited below is vendored verbatim in `real-systems/inputs/evidence/` — both at their real repo path, see each folder's README.
-
-## Tool change made during this check
-
-Authentication now counts a component that shares a credential with the authenticator as verifying the token itself (`SemanticValidator.sharingCredential`). Before, only an authenticator physically on the path counted, which wrongly reported token-based systems such as Bank of Anthos.
-
-A second fix: in an Isolation rule with `via`, a mediator that is also the source or target of the rule no longer disables the search silently (found when a `via` rule on Sock Shop returned nothing).
+Two tool fixes made while building this: authentication now counts a
+component sharing a credential with the authenticator as verifying the
+token itself (fixed a false finding on Bank of Anthos); a `via` mediator
+that's also the source/target of an Isolation rule no longer silently
+disables the search (found on Sock Shop).
 
 ## 1. Repos checked
 
@@ -22,30 +24,14 @@ A second fix: in an Isolation rule with `via`, a mediator that is also the sourc
 | sock-shop | microservices-demo/microservices-demo + 8 service repos | 9dff06f 2023-12-05 | `deploy/kubernetes/complete-demo.yaml` | identical |
 | teastore | DescartesResearch/TeaStore | 34b37f7 2025-01-08 | `examples/kubernetes/teastore-clusterip.yaml` | identical |
 
-All 7 ground-truth files are vendored verbatim, at their real repo path, under
-`real-systems/inputs/manifests/` (see that folder's README for the exact
-path mapping). Sock Shop service repos used for source checks (commit): carts f4e8005 catalogue 925e08e front-end 52dee65 orders 546a10c payment 384e334 queue-master 7dc3372 shipping 9c0fbfa user e1a79e7.
+All 7 ground-truth files vendored verbatim under `real-systems/inputs/manifests/`.
+Sock Shop service repos used for source checks (commit): carts f4e8005
+catalogue 925e08e front-end 52dee65 orders 546a10c payment 384e334
+queue-master 7dc3372 shipping 9c0fbfa user e1a79e7.
 
-## 2. From git to the YAML model
+How git becomes `.arch.yaml`/`.secdsl`: see `METHODOLOGY.md`.
 
-Each system is one `.arch.yaml` (structure) and one `.secdsl` (rules). Steps, applied identically to all 7:
-
-| Step | What is read in git | What goes in the model |
-|---|---|---|
-| 1 | One ground-truth deployment file (see section 1) | one `Architecture` named after the system |
-| 2 | Nothing: manifests do not say which machine runs a pod | one `Worker` host (the cluster or compose host), every deployable `deployedOn` it |
-| 3 | Every Kubernetes Deployment/StatefulSet, every Compose service | one `Deployable` each. `Data` if the image is a database, cache or broker (mongo, postgres, mariadb, redis, memcached, rabbitmq), else `App` |
-| 4 | k8s `Service.type` (LoadBalancer or NodePort), Compose `ports:` | `exposure: external` only for the intended public entry point. Everything else `internal`. Compose maps host ports to dev UIs (jaeger, consul, flagd-ui); those stay `internal` and the header of each model says so |
-| 5 | `containerPort`, Compose `ports`, known protocol of the image | one `Port` per endpoint with number (container port) and protocol: `http`, `grpc`, `tcp` (databases, Thrift), `udp` (jaeger agent) |
-| 6 | Env vars and ConfigMaps naming another service (`PAYMENT_SERVICE_ADDR: paymentservice:50051`), Compose `depends_on`, then the service source code where the manifest is silent (`config_json["text-service"]`, `srv-geo`, `Service.PERSISTENCE`, lua scripts) | one `Connector` per directed call, one `out` link on the caller, one `in` link on the callee |
-| 7 | `image:` | one `Implementation` per deployable (`runtime: container`, image when the manifest has a literal one) |
-| 8 | Volumes | `persistent: true` only if the data volume outlives the pod (PVC, volumeClaimTemplate, hostPath, named Compose volume). `emptyDir`, no volume, or an init-script mount count as not persistent |
-| 9 | The author | `Domain` attribute (business role) and `DataClass` on sensitive stores. This is the only step that is a judgment, not a read |
-| 10 | The author, one rubric for all 7 | `.secdsl`: isolate the session or account store from the public entry point; `Availability medium` on the user-facing path; `Confidentiality` where the call graph carries payment or ledger data; `Authentication` only where the system has a real auth service |
-
-Example, Online Boutique `frontend`: the Service `frontend-external` is `type: LoadBalancer` (`release/kubernetes-manifests.yaml:588`), so `exposure: external`; the Deployment's `containerPort: 8080` becomes the port `http_in`; its env vars `PRODUCT_CATALOG_SERVICE_ADDR` etc. become one connector each (`FE_to_ProductCatalog`, ...); no `replicas:` field, so the model declares no `scale` and the tool counts one copy.
-
-## 3. Is each model right? Checked against the repos
+## 2. Is each model right? Checked against the repos
 
 | System | Units in repo / modeled | External entry points | Data flags checked | Edges in model | Edge sources (manifest / service code / config) |
 |---|---|---|---|---|---|
@@ -57,26 +43,15 @@ Example, Online Boutique `frontend`: the Service `frontend-external` is `type: L
 | sock-shop | 14 / 14 | front-end | 5 Data components, flags match the volumes | 15 | 2 / 13 / 0 |
 | teastore | 7 / 7 | teastore-webui | 1 Data components, flags match the volumes | 13 | 6 / 7 / 0 |
 
-Errors found by this check and fixed in the models (none changed a finding):
+Fixed during this check, none changed a finding: 24 missing units added, 14
+wrong persistence flags fixed, 6 fake edges removed, 31 real edges added,
+2 port numbers corrected. Still a judgment call, not a read: Compose
+host-port exposure, `Domain`/`DataClass` tags, the rubric itself, jaeger's
+port (not published by the compose files), a couple of OTel protocol labels.
 
-- 24 units added: hotel 9, social-network 8, OTel 5, Online Boutique `loadgenerator`, Bank of Anthos `loadgenerator`. 0 manifest units are missing now.
-- 14 `persistent` flags were wrong and are now false: Bank of Anthos 2 (`emptyDir`), Sock Shop 4, TeaStore 1 (no volume), OTel `astronomy-db` (init script only), Social-Network 6 (no volumes).
-- 6 edges did not exist in the code and were removed: Sock Shop `orders -> queue-master`; Social-Network `compose-post -> social-graph / url-shorten / user-mention`, `media-service -> media-mongodb`, `media-frontend -> media-service`.
-- 31 real edges were missing and were added: hotel consul x10; Social-Network 14 (text -> url-shorten and user-mention, home-timeline -> post-storage and social-graph, user <-> social-graph, user-timeline -> post-storage, user-mention -> user stores, nginx-thrift -> 4 services, media-frontend -> media-mongodb); TeaStore 3 (auth, image, recommender -> persistence); Sock Shop 3 (shipping -> rabbitmq, orders -> carts and user); Bank of Anthos `ledgerwriter -> balancereader`.
-- 2 port numbers changed to the container-port convention (Online Boutique `emailservice` 5000 -> 8080, Social-Network `media-frontend` 8081 -> 8080). A false header claim was corrected: Social-Network `post-storage-service` also publishes a host port (10002:9090, a debug mapping, kept internal).
+## 3. The findings
 
-Still a judgment, not a read from git (the model is right only if you accept these):
-
-- Which host-port services count as `external` on the 3 Compose systems (compose maps host ports to dev UIs too).
-- `Domain` and `DataClass` tags, and the rubric in `.secdsl`.
-- Port numbers for `jaeger` (`6831`, from Jaeger's agent default, not published by the compose files).
-- Protocol labels of a few OTel edges (`flagd` as `grpc`).
-
-So the honest answer is: units, exposure of the real entry points, persistence, ports and every edge are now checked against the repos. The exposure of dev tooling, the tags and the rubric are author decisions.
-
-## 4. The findings
-
-Verdict key: **Confirmed** = the fact is true in the repo. **Partial** = exposure true, the app has a login on some routes. **Model artifact** = true in the model, not a weakness in the real app. **By design** = real path, intended by the app. Replicas findings are true facts but exist because the rubric asks for at least 2 copies (`Availability medium`).
+Verdict key: **Confirmed** = true in the repo. **Partial** = exposure true, app has a login on some routes. **Model artifact** = true in the model, not in the app. **By design** = real path, intended by the app. Replicas findings exist because the rubric asks for >=2 copies (`Availability medium`).
 
 | # | System | Check | Subject | Why the tool reports it | Evidence in repo | Verdict |
 |---|---|---|---|---|---|---|
@@ -128,10 +103,10 @@ Verdict key: **Confirmed** = the fact is true in the repo. **Partial** = exposur
 
 Totals: 45 findings. By design 1, Confirmed 39, Model artifact 1, Partial 4.
 
-## 5. What the check shows about the tool
+## 4. Notes per check
 
-- The single-copy findings (28) are true but rubric-driven: the shipped manifests run one replica (the evidence column shows an explicit `replicas: 1` or the absence of the field, which means the default of 1).
-- 8 unauthenticated-entry findings: 3 are Confirmed (no login code), 4 are Partial (the app has login on some routes), 1 is a Model artifact (Bank of Anthos: its frontend redirects to /login, the model cannot express a login built into the entry). The check reports exposure without a rule, it cannot see login built into the app.
-- Plaintext channel: all 6 are Confirmed in code (insecure gRPC credentials or `http://`).
-- Authentication bypass: TeaStore is Confirmed. Bank of Anthos is no longer reported: its backends verify the JWT themselves, which the tool now understands through a shared credential (`jwt-key`, mounted by userservice and the 5 verifiers in the manifests).
-- Isolation: every system now states the multi-hop form of the rule (the store is reachable from the entry only through its own domain, `via`). 5 systems hold the design (silent). Sock Shop fires on a direct path the app needs (its session store). Social Network fires because a second service (`user-mention-service`) reads the user store.
+- Replicas (28): true but rubric-driven, all shipped with 1 copy.
+- Unauthenticated entry (8): 3 Confirmed, 4 Partial (login on some routes), 1 Model artifact (Bank of Anthos redirects to /login, model can't express it).
+- Plaintext channel (6): all Confirmed (insecure gRPC or plain `http://`).
+- Authentication bypass: TeaStore Confirmed. Bank of Anthos no longer flagged, tool now understands its shared JWT credential.
+- Isolation: all 7 use the multi-hop `via` form. 5 silent. Sock Shop fires on a path the app needs (session store). Social Network fires because a second service reads the user store.

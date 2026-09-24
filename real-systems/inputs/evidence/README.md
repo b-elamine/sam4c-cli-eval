@@ -1,14 +1,9 @@
 # Source-code evidence
 
-Every finding that cites a line of service source code (not a deployment
-manifest) in `../../../FINDINGS.md` has that exact file vendored here, at its
-real path inside the upstream repo. Same bytes, same path, nothing edited.
+Service source files cited in `../../../FINDINGS.md` (not manifests, those
+are in `../manifests/`), vendored verbatim at their real repo path.
 
-Manifests (the deployment files) are in `../manifests/`, not here. This
-folder is only for the service source code checked when a manifest alone
-did not settle a finding.
-
-| File here | Real repo | Cited in FINDINGS.md row |
+| File here | Real repo | FINDINGS.md row |
 |---|---|---|
 | `bank-of-anthos/src/frontend/frontend.py` | GoogleCloudPlatform/bank-of-anthos | 1, 2, 3, 4 |
 | `hotel-reservation/hotelReservation/services/frontend/server.go` | delimitrou/DeathStarBench | 6 |
@@ -26,11 +21,5 @@ did not settle a finding.
 | `teastore/.../webui/startup/WebuiStartup.java` | DescartesResearch/TeaStore | 43 |
 | `teastore/.../webui/servlet/LoginActionServlet.java` | DescartesResearch/TeaStore | 44 |
 
-Exact commits are in `FINDINGS.md` section 1 (Sock Shop's constituent
-service repos, e.g. `orders`, `payment`, `front-end`, are listed separately
-there since Sock Shop is assembled from 8 independent repos, not one).
-
-An earlier version of `FINDINGS.md` cited some of these with a shortened or
-bare-filename path (e.g. `webui/.../CartServlet.java`, or `TextService.cpp`
-with no path at all). That's fixed: every citation in `FINDINGS.md` now
-gives the real path, matching what's vendored here exactly.
+Commits: `FINDINGS.md` section 1 (Sock Shop's constituent repos listed
+separately there, it's assembled from 8 independent repos).

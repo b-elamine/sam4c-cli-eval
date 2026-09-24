@@ -1,6 +1,6 @@
 # Model inventory
 
-Every modeled component. Full per-finding evidence: `findings-explained.md`.
+Every modeled component. Full per-finding evidence: `FINDINGS.md`.
 
 | System | Component | Type | Domain | Exposure | Persistent | Credentials |
 |---|---|---|---|---|---|---|
