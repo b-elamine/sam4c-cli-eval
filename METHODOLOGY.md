@@ -54,6 +54,65 @@ Deployment's `containerPort: 8080` becomes port `http_in`; env vars like
 `PRODUCT_CATALOG_SERVICE_ADDR` become one connector each; no `replicas:`
 field, so the tool counts one copy by Kubernetes' own default.
 
+### Why convert this way, step by step
+
+In plain terms: the model should say exactly what the deployment file says,
+nothing more, nothing invented — and only fall back to the service's own
+source code for the one thing a deployment file cannot say by itself, which
+service calls which. Here is the reasoning behind each step.
+
+- **One ground-truth file, not several merged together (step 1).** Every
+  system ships one file that is its actual deploy artifact. Building the
+  model from anything else (a different branch, a subset of manifests, a
+  hand-picked combination) would mean the model describes something that was
+  never actually deployed. One file in, one model out, keeps that link
+  honest. This is also why `bank-of-anthos.yaml` was rebuilt as a real
+  10-file vendored folder instead of a hand-merged single file — see
+  `real-systems/inputs/manifests/README.md`.
+- **One `Worker` host for everything (step 2).** A Kubernetes or Compose
+  manifest never says which physical or virtual machine a pod ends up on —
+  that's the scheduler's decision, made at runtime, not something declared
+  in the file. Inventing a specific host topology would be guessing.
+  Collapsing everything onto one placeholder `Worker` says, correctly,
+  "the manifest is silent on this," instead of asserting a topology nobody
+  wrote down.
+- **App vs Data by image, not by name (step 3).** Names lie (a "queue" can
+  be an app-level worker or a broker); the image tells the truth about what
+  actually runs. A known database/cache/broker image is classified `Data`
+  because that's what the tool's checks care about (exposed data store,
+  persistence); everything else defaults to `App`.
+- **Exposure defaults to internal (step 4).** The manifest is the only
+  source of truth for what's actually reachable from outside the cluster
+  (`LoadBalancer`/`NodePort`/a published host port). A component is marked
+  `external` only when the manifest says so explicitly; the default is
+  `internal`, so no assumption is smuggled in.
+- **Ports and protocols read from the container, not guessed (step 5).** The
+  container port is a fact in the file. The protocol usually isn't stated
+  directly, so it's inferred from what the image is known to speak (a
+  Postgres image speaks `tcp`, an HTTP framework speaks `http`) — a
+  convention applied the same way across all 7 systems, not per-system
+  guessing.
+- **Source code only where the manifest is silent (step 6).** Most calls
+  between services are visible directly in the manifest, as an env var or
+  ConfigMap naming another service, or a Compose `depends_on`. Only when the
+  manifest genuinely does not say who calls whom does the process fall back
+  to reading the calling service's own source code for the address it
+  connects to. This keeps the manifest authoritative where it can be, and
+  is explicit about the one place where it can't.
+- **Persistent means the data outlives the pod (step 8).** The check this
+  feeds (exposed data store) only matters if losing the pod also loses the
+  data. A volume that's wiped on restart (`emptyDir`, no volume, an
+  init-script mount) doesn't carry that risk, so it's flagged `false`
+  regardless of whether the component is technically a database image.
+- **Domain/DataClass tags and the rubric are the one place judgment enters
+  (steps 9–10), and that's stated, not hidden.** Nothing in a deployment
+  file says "this is the payment path" or "this store holds account data" —
+  that's business knowledge, not infrastructure fact. Rather than pretend
+  otherwise, this step is named explicitly as the one place a human
+  decision enters the model, and the same rubric (section 4) is applied
+  identically to all 7 systems so the judgment is at least consistent,
+  even where it can't be purely mechanical.
+
 ## 4. Rule authoring: one rubric, applied to all 7
 
 The same policy template is instantiated per system, using each system's own

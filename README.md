@@ -29,7 +29,8 @@ Expect `28/28 checks passed`.
 | `FINDINGS.md` | all 45 findings, one row each, with the `path:line` evidence in the real repo and a verdict |
 | `model-inventory.md` | every modeled component, one row each |
 | `real-systems/inputs/` | the 7 `.arch.yaml` + `.secdsl` model pairs (the tool's input) |
-| `real-systems/inputs/manifests/` | the ground-truth deployment file each model was built from |
+| `real-systems/inputs/manifests/` | the ground-truth deployment file each model was built from, vendored verbatim at its real repo path |
+| `real-systems/inputs/evidence/` | the service source files cited as finding evidence, vendored verbatim at their real repo path |
 | `real-systems/outputs/` | the tool's raw JSON output per system (the tool's output) |
 | `tool-validation-pilot/` | 12 hand-built vulnerable/fixed pairs used to sanity-check the tool's mechanics, kept separate from the real-system results |
 | `eval-tables/` | the same results as paper-ready LaTeX tables (tex/pdf/png) |
