@@ -10,9 +10,9 @@ A second fix: in an Isolation rule with `via`, a mediator that is also the sourc
 
 ## 1. Repos checked
 
-| System | Repo | Commit checked out (date) | Ground-truth file | Stored manifest vs that commit |
+| System | Repo | Commit checked out (date) | Ground-truth file | Vendored copy vs that commit |
 |---|---|---|---|---|
-| bank-of-anthos | GoogleCloudPlatform/bank-of-anthos | 1e40564f 2026-07-13 | `kubernetes-manifests/*.yaml (9 workloads)` | same 9 workloads; stored file rebuilt from the directory |
+| bank-of-anthos | GoogleCloudPlatform/bank-of-anthos | 1e40564f 2026-07-13 | `kubernetes-manifests/*.yaml` (10 files: 9 workloads + config.yaml) | identical, all 10 files vendored as-is |
 | hotel-reservation | delimitrou/DeathStarBench | 6ecb097 2024-06-27 | `hotelReservation/docker-compose.yml` | identical |
 | online-boutique | GoogleCloudPlatform/microservices-demo | 9a4616e7 2026-07-13 | `release/kubernetes-manifests.yaml` | identical at 2026-07-31; HEAD (2026-09-18) differs: same 12 workloads and service types, 11 image tags changed |
 | opentelemetry-demo | open-telemetry/opentelemetry-demo | f7408a5 2026-07-31 | `compose.yaml` | identical at 2026-07-31; HEAD (2026-09-18) differs: same 20 services |
@@ -20,7 +20,9 @@ A second fix: in an Isolation rule with `via`, a mediator that is also the sourc
 | sock-shop | microservices-demo/microservices-demo + 8 service repos | 9dff06f 2023-12-05 | `deploy/kubernetes/complete-demo.yaml` | identical |
 | teastore | DescartesResearch/TeaStore | 34b37f7 2025-01-08 | `examples/kubernetes/teastore-clusterip.yaml` | identical |
 
-Sock Shop service repos used for source checks (commit): carts f4e8005 catalogue 925e08e front-end 52dee65 orders 546a10c payment 384e334 queue-master 7dc3372 shipping 9c0fbfa user e1a79e7.
+All 7 ground-truth files are vendored verbatim, at their real repo path, under
+`real-systems/inputs/manifests/` (see that folder's README for the exact
+path mapping). Sock Shop service repos used for source checks (commit): carts f4e8005 catalogue 925e08e front-end 52dee65 orders 546a10c payment 384e334 queue-master 7dc3372 shipping 9c0fbfa user e1a79e7.
 
 ## 2. From git to the YAML model
 

@@ -12,8 +12,8 @@
 #
 # Full-manifest pass (2026-09-20): loadgenerator (previously excluded as test traffic) is
 # now modeled, Domain observability, edge to frontend from its FRONTEND_ADDR env var
-# (frontend:80). The stored real-manifests/bank-of-anthos.yaml is now the concatenation
-# of the repo's kubernetes-manifests/*.yaml (9 workloads), so the ground truth is complete.
+# (frontend:80). Ground truth is the repo's real kubernetes-manifests/*.yaml, all 10
+# files (9 workloads + config.yaml), vendored as-is in manifests/bank-of-anthos/ (2026-09-24).
 #
 # persistent = the data volume outlives the pod/container (PVC, volumeClaimTemplate,
 # hostPath, or a named compose volume). emptyDir, no volume, or an init-script-only bind
