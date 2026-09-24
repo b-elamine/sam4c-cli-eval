@@ -1,55 +1,31 @@
 # Findings, verified against the source repos
 
-All 7 systems cloned and checked against the repo files, re-verified at tool
-commit `9850fbd564c0e9db9504627f53f99ce12268a978` on 2026-09-24, no change
-in results. Every path below is the real repo path. Manifests are vendored
-in `real-systems/inputs/manifests/`, cited source files in
-`real-systems/inputs/evidence/`. Reproduce: `python3 scripts/reproduce.py <path-to-jar>`.
-
-Two tool fixes made while building this: authentication now counts a
-component sharing a credential with the authenticator as verifying the
-token itself (fixed a false finding on Bank of Anthos); a `via` mediator
-that's also the source/target of an Isolation rule no longer silently
-disables the search (found on Sock Shop).
+All 7 systems cloned and checked against the repo files. Every path below is
+the real repo path. Manifests: `real-systems/inputs/manifests/`. Cited
+source files: `real-systems/inputs/evidence/`. Tool version and reproduce
+steps: `tool/README.md`.
 
 ## 1. Repos checked
 
-| System | Repo | Commit checked out (date) | Ground-truth file | Vendored copy vs that commit |
-|---|---|---|---|---|
-| bank-of-anthos | GoogleCloudPlatform/bank-of-anthos | 1e40564f 2026-07-13 | `kubernetes-manifests/*.yaml` (10 files: 9 workloads + config.yaml) | identical, all 10 files vendored as-is |
-| hotel-reservation | delimitrou/DeathStarBench | 6ecb097 2024-06-27 | `hotelReservation/docker-compose.yml` | identical |
-| online-boutique | GoogleCloudPlatform/microservices-demo | 9a4616e7 2026-07-13 | `release/kubernetes-manifests.yaml` | identical at 2026-07-31; HEAD (2026-09-18) differs: same 12 workloads and service types, 11 image tags changed |
-| opentelemetry-demo | open-telemetry/opentelemetry-demo | f7408a5 2026-07-31 | `compose.yaml` | identical at 2026-07-31; HEAD (2026-09-18) differs: same 20 services |
-| social-network | delimitrou/DeathStarBench | 6ecb097 2024-06-27 | `socialNetwork/docker-compose.yml` | identical |
-| sock-shop | microservices-demo/microservices-demo + 8 service repos | 9dff06f 2023-12-05 | `deploy/kubernetes/complete-demo.yaml` | identical |
-| teastore | DescartesResearch/TeaStore | 34b37f7 2025-01-08 | `examples/kubernetes/teastore-clusterip.yaml` | identical |
+| System | Repo | Commit | Ground-truth file |
+| --- | --- | --- | --- |
+| bank-of-anthos | GoogleCloudPlatform/bank-of-anthos | 1e40564f | `kubernetes-manifests/*.yaml` (10 files) |
+| hotel-reservation | delimitrou/DeathStarBench | 6ecb097 | `hotelReservation/docker-compose.yml` |
+| online-boutique | GoogleCloudPlatform/microservices-demo | 9a4616e7 | `release/kubernetes-manifests.yaml` |
+| opentelemetry-demo | open-telemetry/opentelemetry-demo | f7408a5 | `compose.yaml` |
+| social-network | delimitrou/DeathStarBench | 6ecb097 | `socialNetwork/docker-compose.yml` |
+| sock-shop | microservices-demo/microservices-demo + 8 service repos | 9dff06f | `deploy/kubernetes/complete-demo.yaml` |
+| teastore | DescartesResearch/TeaStore | 34b37f7 | `examples/kubernetes/teastore-clusterip.yaml` |
 
 All 7 ground-truth files vendored verbatim under `real-systems/inputs/manifests/`.
 Sock Shop service repos used for source checks (commit): carts f4e8005
 catalogue 925e08e front-end 52dee65 orders 546a10c payment 384e334
 queue-master 7dc3372 shipping 9c0fbfa user e1a79e7.
 
-How git becomes `.arch.yaml`/`.secdsl`: see `METHODOLOGY.md`.
+How git becomes `.arch.yaml`/`.secdsl`, and the model-vs-repo check counts:
+`METHODOLOGY.md`.
 
-## 2. Is each model right? Checked against the repos
-
-| System | Units in repo / modeled | External entry points | Data flags checked | Edges in model | Edge sources (manifest / service code / config) |
-|---|---|---|---|---|---|
-| bank-of-anthos | 9 / 9 | frontend | 2 Data components, flags match the volumes | 12 | 11 / 1 / 0 |
-| hotel-reservation | 24 / 24 | frontend (judgment) | 12 Data components, flags match the volumes | 41 | 22 / 9 / 10 |
-| online-boutique | 12 / 12 | frontend | 1 Data components, flags match the volumes | 16 | 16 / 0 / 0 |
-| opentelemetry-demo | 20 / 20 | frontend-proxy (judgment) | 2 Data components, flags match the volumes | 48 | 48 / 0 / 0 |
-| social-network | 27 / 27 | nginx-thrift, media-frontend (judgment) | 13 Data components, flags match the volumes | 46 | 13 / 27 / 6 lua |
-| sock-shop | 14 / 14 | front-end | 5 Data components, flags match the volumes | 15 | 2 / 13 / 0 |
-| teastore | 7 / 7 | teastore-webui | 1 Data components, flags match the volumes | 13 | 6 / 7 / 0 |
-
-Fixed during this check, none changed a finding: 24 missing units added, 14
-wrong persistence flags fixed, 6 fake edges removed, 31 real edges added,
-2 port numbers corrected. Still a judgment call, not a read: Compose
-host-port exposure, `Domain`/`DataClass` tags, the rubric itself, jaeger's
-port (not published by the compose files), a couple of OTel protocol labels.
-
-## 3. The findings
+## 2. The findings
 
 Verdict key: **Confirmed** = true in the repo. **Partial** = exposure true, app has a login on some routes. **Model artifact** = true in the model, not in the app. **By design** = real path, intended by the app. Replicas findings exist because the rubric asks for >=2 copies (`Availability medium`).
 
@@ -102,11 +78,3 @@ Verdict key: **Confirmed** = true in the repo. **Partial** = exposure true, app 
 | 45 | teastore | Insufficient replicas | teastore-webui | `Availability` rule targets it and it runs one copy | teastore/examples/kubernetes/teastore-clusterip.yaml:255 (no `replicas` field, Kubernetes default 1) | Confirmed: single copy |
 
 Totals: 45 findings. By design 1, Confirmed 39, Model artifact 1, Partial 4.
-
-## 4. Notes per check
-
-- Replicas (28): true but rubric-driven, all shipped with 1 copy.
-- Unauthenticated entry (8): 3 Confirmed, 4 Partial (login on some routes), 1 Model artifact (Bank of Anthos redirects to /login, model can't express it).
-- Plaintext channel (6): all Confirmed (insecure gRPC or plain `http://`).
-- Authentication bypass: TeaStore Confirmed. Bank of Anthos no longer flagged, tool now understands its shared JWT credential.
-- Isolation: all 7 use the multi-hop `via` form. 5 silent. Sock Shop fires on a path the app needs (session store). Social Network fires because a second service reads the user store.

@@ -1,0 +1,8 @@
+  ! Isolation violated: a multi-hop path exists (session-db -> front-end) that bypasses the approved mediator 'carts,carts-db,session-db' -- they are not isolated
+  ! 'front-end' is exposed (exposure: external) but no Authentication rule guards it -- unauthenticated entry point
+  ! Confidentiality requires a protected channel but connector 'Orders_to_Payment' is plaintext (protocol: http) -- data crosses this connector unprotected
+  ! Availability=medium but 'front-end' has 1 copy (needs >= 2) -- single point of failure, requirement not satisfied
+  ! Availability=medium but 'orders' has 1 copy (needs >= 2) -- single point of failure, requirement not satisfied
+  ! Availability=medium but 'orders-db' has 1 copy (needs >= 2) -- single point of failure, requirement not satisfied
+  ! Availability=medium but 'queue-master' has 1 copy (needs >= 2) -- single point of failure, requirement not satisfied
+  ! Availability=medium but 'rabbitmq' has 1 copy (needs >= 2) -- single point of failure, requirement not satisfied

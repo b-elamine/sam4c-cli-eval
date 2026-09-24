@@ -1,0 +1,15 @@
+  ! Isolation violated: a multi-hop path exists (user-mongodb -> user-mention-service -> jaeger-agent -> nginx-thrift) that bypasses the approved mediator 'user-memcached,user-mongodb,user-service' -- they are not isolated
+  ! 'nginx-thrift' is exposed (exposure: external) but no Authentication rule guards it -- unauthenticated entry point
+  ! 'media-frontend' is exposed (exposure: external) but no Authentication rule guards it -- unauthenticated entry point
+  ! Availability=medium but 'nginx-thrift' has 1 copy (needs >= 2) -- single point of failure, requirement not satisfied
+  ! Availability=medium but 'media-frontend' has 1 copy (needs >= 2) -- single point of failure, requirement not satisfied
+  ! Availability=medium but 'compose-post-service' has 1 copy (needs >= 2) -- single point of failure, requirement not satisfied
+  ! Availability=medium but 'text-service' has 1 copy (needs >= 2) -- single point of failure, requirement not satisfied
+  ! Availability=medium but 'unique-id-service' has 1 copy (needs >= 2) -- single point of failure, requirement not satisfied
+  ! Availability=medium but 'user-mention-service' has 1 copy (needs >= 2) -- single point of failure, requirement not satisfied
+  ! Availability=medium but 'url-shorten-service' has 1 copy (needs >= 2) -- single point of failure, requirement not satisfied
+  ! Availability=medium but 'url-shorten-mongodb' has 1 copy (needs >= 2) -- single point of failure, requirement not satisfied
+  ! Availability=medium but 'post-storage-service' has 1 copy (needs >= 2) -- single point of failure, requirement not satisfied
+  ! Availability=medium but 'post-storage-mongodb' has 1 copy (needs >= 2) -- single point of failure, requirement not satisfied
+  ! Availability=medium but 'post-storage-memcached' has 1 copy (needs >= 2) -- single point of failure, requirement not satisfied
+  ! Availability=medium but 'url-shorten-memcached' has 1 copy (needs >= 2) -- single point of failure, requirement not satisfied

@@ -1,0 +1,3 @@
+  ! Authentication requires access from 'teastore-webui' to 'teastore-persistence' to pass through 'teastore-auth', but a path (teastore-webui -> teastore-persistence) bypasses it -- authentication is declared, not enforced by the topology
+  ! 'teastore-webui' is exposed (exposure: external) but no Authentication rule guards it -- unauthenticated entry point
+  ! Availability=medium but 'teastore-webui' has 1 copy (needs >= 2) -- single point of failure, requirement not satisfied

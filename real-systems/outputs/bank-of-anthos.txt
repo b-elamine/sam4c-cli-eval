@@ -1,0 +1,5 @@
+  ! 'frontend' is exposed (exposure: external) but no Authentication rule guards it -- unauthenticated entry point
+  ! Confidentiality requires a protected channel but connector 'FE_to_LedgerWriter' is plaintext (protocol: http) -- data crosses this connector unprotected
+  ! Confidentiality requires a protected channel but connector 'FE_to_BalanceReader' is plaintext (protocol: http) -- data crosses this connector unprotected
+  ! Confidentiality requires a protected channel but connector 'FE_to_TransactionHistory' is plaintext (protocol: http) -- data crosses this connector unprotected
+  ! Availability=medium but 'frontend' has 1 copy (needs >= 2) -- single point of failure, requirement not satisfied

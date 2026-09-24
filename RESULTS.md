@@ -1,6 +1,6 @@
 # Results
 
-2026-09-20, re-verified 2026-09-24 | tool `sam4c-cli` at commit `9850fbd564c0e9db9504627f53f99ce12268a978` | test status: **15 / 15 pass** (`python3 scripts/reproduce.py <path-to-jar>`)
+Tool version: `tool/README.md`. Test status: **15 / 15 pass** (`python3 scripts/reproduce.py <path-to-jar>`)
 
 **45 findings on 7 real systems, 39 confirmed in the systems' own source, none injected.**
 
@@ -61,31 +61,22 @@ C = confirmed | P = partial (exposure true, the app has a login on some routes) 
 | Insufficient replicas | 28 | 28 | 0 | 0 | 0 | 100% | 100% |
 | **All** | **45** | **39** | 4 | 1 | 1 | **87%** | **98%** |
 
+"All" row, how it's computed (pooled, not an average of the 5 rows above):
+```
+Precision C     = (3+1+6+1+28) / (8+2+6+1+28) = 39/45 = 87%
+Precision C+P+D = (7+2+6+1+28) / (8+2+6+1+28) = 44/45 = 98%
+```
+For comparison, simple average of the 5 per-check % (38,50,100,100,100)/5 = 78% --
+lower, because "Insufficient replicas" alone is 28/45 findings and pulls the
+pooled number up.
+
 Every finding with its `path:line` evidence: `FINDINGS.md`.
 
-## 5. Models checked against the repos
-
-| System | Units in repo = modeled | Edges: deployment file / service code / config | Corrected in the models |
-|---|---|---|---|
-| BoA | 9 | 11 / 1 / 0 = 12 | +1 unit, +1 edge, 2 persistence flags, credentials |
-| HR | 24 | 22 / 9 / 10 = 41 | +9 units, +10 edges |
-| OB | 12 | 16 / 0 / 0 = 16 | +1 unit, 1 port |
-| OTel | 20 | 48 / 0 / 0 = 48 | +5 units, 1 persistence flag |
-| SN | 27 | 13 / 27 / 6 = 46 | +8 units, 6 flags, -5 / +14 edges, 1 port |
-| SS | 14 | 2 / 13 / 0 = 15 | 4 flags, -1 / +3 edges |
-| TS | 7 | 6 / 7 / 0 = 13 | 1 flag, +3 edges |
-| **Total** | **113** | **118 / 57 / 16 = 191** | 24 units, 14 flags, 6 edges removed, 31 added, 2 ports |
-
-## 6. Reproduce
+## 5. Reproduce
 
 ```
 cat tool/README.md                                       # build the tool at the pinned commit
 python3 scripts/reproduce.py /path/to/sam4c-cli.jar       # 15 checks, from this folder's root
 ```
 
-## 7. Limits
-
-- One labeller (the author), no independent check. Recall not measured.
-- `via` Isolation runs on all 7 (2 findings, 5 silent); weak-hop chaining not exercised here.
-- `Availability medium` everywhere, zone spread not exercised here.
-- No baseline against another tool yet, no synthetic examples.
+Limits: see `METHODOLOGY.md`.

@@ -15,32 +15,49 @@ hospitality, social) and platform spread (4 Kubernetes, 3 Compose). All
 public source, so every finding can be checked against a line of code.
 No production/proprietary systems, nothing modified to add a known CVE.
 
-## Modeling: git to `.arch.yaml` + `.secdsl`
+## Modeling: from git to the two model files
 
-Manual, same 10 steps for all 7. Steps 9-10 are judgment calls, the rest is
-a direct read of the repo.
+Each system gets 2 files, built by hand, same way every time: `.arch.yaml`
+(what the system looks like) and `.secdsl` (what it must satisfy).
 
-| Step | Read from git | Goes into the model |
-|---|---|---|
-| 1 | the one deployment file the repo actually ships | one `Architecture` |
-| 2 | nothing (manifest never says which machine runs a pod) | one `Worker` host, everything `deployedOn` it |
-| 3 | every Deployment/StatefulSet/Compose service | one `Deployable`: `Data` if the image is a known DB/cache/broker, else `App` |
-| 4 | `Service.type` / Compose `ports:` | `external` only for the real public entry, else `internal` |
-| 5 | `containerPort`, known protocol of the image | one `Port`, number + protocol |
-| 6 | env vars/ConfigMaps/`depends_on`, then source code if the manifest is silent | one `Connector` + 2 `Link`s per call |
-| 7 | `image:` | one `Implementation` |
-| 8 | volumes | `persistent: true` only if the volume outlives the pod |
-| 9 | the author, reading the system | `Domain`/`DataClass` tags — first judgment call |
-| 10 | the author, one rubric for all 7 | the `.secdsl` rules |
+**Building `.arch.yaml`** -- mechanical, read straight from the one
+deployment file the repo actually ships:
 
-Why this shape, briefly: one ground-truth file only (no merging branches or
-hand-picked subsets); no invented host topology since the manifest doesn't
-have one; App/Data decided by image, not name, since names lie; exposure
-defaults to internal unless the manifest says otherwise; source code is a
-fallback only for edges the manifest doesn't state, never for anything else;
-persistence means "survives losing the pod," not "is technically a DB
-image." Steps 9-10 are the one place judgment enters, and that's the point
-of naming them explicitly instead of pretending the whole thing is
+1. **Every workload becomes a component.** Every Kubernetes
+   `Deployment`/`StatefulSet`, or every Compose `service:` entry, becomes
+   one component. A known database/cache/broker image (Postgres, Redis,
+   RabbitMQ...) is tagged `Data`, everything else `App`.
+2. **Is it reachable from outside?** `Service.type: LoadBalancer`/`NodePort`
+   (Kubernetes) or a published host port (Compose) -> `external`. Anything
+   else -> `internal`.
+3. **Port and protocol.** The container port is a fact in the file; the
+   protocol is inferred from what the image is known to speak (Postgres ->
+   `tcp`, an HTTP service -> `http`).
+4. **Who calls whom.** An env var or ConfigMap naming another service, or a
+   Compose `depends_on`, becomes one connection. Only if the manifest says
+   nothing about a call does the process fall back to reading that
+   service's own source code.
+5. **What image runs.** The `image:` field, copied as-is.
+6. **Does the data survive a restart?** A PVC, `volumeClaimTemplate`,
+   `hostPath`, or named Compose volume -> persistent. `emptyDir`, no
+   volume, or an init-script-only mount -> not persistent.
+7. **Where does it run.** The manifest never says which machine a pod ends
+   up on, so every component is placed on one made-up placeholder host,
+   the same one for the whole system.
+
+**Building `.secdsl`** -- the only 2 steps that are judgment, not a read:
+
+8. Tag each component with its business role (`Domain`) and, for stores,
+   what kind of data it holds (`DataClass`). Nothing in a manifest says
+   "this is the payment path" -- a person reads the system and decides.
+9. Apply one fixed rubric (next section) to every system, using those tags,
+   to write the actual rules.
+
+Why it's built this way: one file only, never a merge of branches or a
+hand-picked subset; no invented host layout, since the manifest has none;
+Data vs App is decided by the image, not the name, since names lie; source
+code is a fallback for calls only, never for anything else. Steps 8-9 are
+named explicitly as judgment so the process isn't mistaken for fully
 mechanical.
 
 ## Rules: one rubric, applied to all 7
@@ -68,23 +85,23 @@ Still a judgment call, not a read: which Compose host-port services count as
 
 Every finding checked against the repo, `path:line` evidence in
 `FINDINGS.md`. Four verdicts:
-- **Confirmed** — true in the repo, no caveat
-- **Partial** — exposure real, app has login on some routes
-- **Model artifact** — true in the model, not a real weakness (login built
+- **Confirmed** -- true in the repo, no caveat
+- **Partial** -- exposure real, app has login on some routes
+- **Model artifact** -- true in the model, not a real weakness (login built
   into the app that the model can't express)
-- **By design** — a real, intended path the rubric flags anyway
+- **By design** -- a real, intended path the rubric flags anyway
 
 45 findings: 39 Confirmed, 4 Partial, 1 By design, 1 Model artifact. One
 labeller (the author), no second opinion yet.
 
 ## What this doesn't measure
 
-- Recall — only precision is checked, not what the tool misses
-- Independent labelling — one person, no inter-rater check
-- A baseline — no comparison against Checkov/KICS/etc. yet
-- Scale beyond 7 — all hand-built, no automatic importer yet
-- Zone spread — `Availability` is medium everywhere, not exercised anywhere here
-- No synthetic examples — an earlier mutation-pair pilot was dropped; every
+- Recall -- only precision is checked, not what the tool misses
+- Independent labelling -- one person, no inter-rater check
+- A baseline -- no comparison against Checkov/KICS/etc. yet
+- Scale beyond 7 -- all hand-built, no automatic importer yet
+- Zone spread -- `Availability` is medium everywhere, not exercised anywhere here
+- No synthetic examples -- an earlier mutation-pair pilot was dropped; every
   number here is from a real, unmodified system
 
 ## Reproduce

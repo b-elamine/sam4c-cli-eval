@@ -14,8 +14,10 @@ git checkout 9850fbd564c0e9db9504627f53f99ce12268a978
 mvn -q clean package -DskipTests
 ```
 
-Produces `target/sam4c-cli.jar` (the shaded jar, use this one —
-`sam4c-cli-1.0-SNAPSHOT.jar` in the same folder has no runnable manifest).
+Produces two files in `target/`. Run `sam4c-cli.jar`, the shaded jar with
+everything bundled in. Do not run `sam4c-cli-1.0-SNAPSHOT.jar` -- it is
+Maven's plain build output, has no runnable manifest, and will fail with
+"no main manifest attribute" if you try.
 
 ## Run
 
@@ -29,12 +31,3 @@ java -jar target/sam4c-cli.jar --validate <arch.yaml> <rules.secdsl>
 python3 scripts/reproduce.py /path/to/sam4c-cli.jar
 ```
 from this evaluation folder's root. Expect `15/15 checks passed`.
-
-## Two fixes made at this commit
-
-- Authentication now counts a component sharing a credential with the
-  authenticator as verifying the token itself, instead of requiring the
-  authenticator physically on the path. Removed a false finding on Bank of
-  Anthos (shared JWT, verified locally by each service).
-- A `via` mediator that's also the source/target of an Isolation rule no
-  longer silently disables the search. Found on Sock Shop.
