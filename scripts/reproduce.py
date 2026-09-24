@@ -86,6 +86,14 @@ for s, exp in SYSTEMS.items():
     tot += len(warns)
     check(ok, f"{s}: conformance")
     check(dict(c) == exp and sum(exp.values()) == len(warns), f"{s}: {len(warns)} findings {dict(c)}")
+
+    # rewrite real-systems/outputs/<system>.txt every run, so it can never
+    # drift from what the tool actually reports right now
+    out_path = f"{ROOT}/real-systems/outputs/{s}.txt"
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    with open(out_path, "w") as f:
+        f.write("\n".join(f"  ! {w}" for w in warns) + ("\n" if warns else ""))
+
 check(tot == 45, f"total findings = {tot} (expected 45)")
 
 print(f"\n{n - fail}/{n} checks passed")
