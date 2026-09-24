@@ -1,0 +1,16 @@
+name: c1-dos-fixed
+# Fix: redundancy (>= 2 replicas) spread across zones -- survives an instance loss
+# and a whole-zone outage.
+components:
+  - name: API
+    type: App
+    attributes: { Domain: backend }
+    exposure: internal
+    scale: { replicas: 3, min: 2, max: 10 }
+    spread: zone
+    ports:
+      - { name: http, number: 8080, protocol: http }
+connectors:
+  - name: ingress
+links:
+  - { port: API.http, connector: ingress, direction: in }

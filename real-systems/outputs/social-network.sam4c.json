@@ -1,0 +1,1761 @@
+{
+  "name" : "social-network",
+  "architecture" : {
+    "name" : "social-network",
+    "components" : [ {
+      "name" : "K8sCluster",
+      "type" : "Worker",
+      "ports" : [ ],
+      "members" : [ ],
+      "attributes" : { },
+      "properties" : { }
+    }, {
+      "name" : "nginx-thrift",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "http_in",
+        "number" : 8080,
+        "protocol" : "http"
+      }, {
+        "name" : "post_out",
+        "number" : null,
+        "protocol" : "http"
+      }, {
+        "name" : "jaeger_agent_out",
+        "number" : null,
+        "protocol" : "udp"
+      }, {
+        "name" : "home_timeline_service_out",
+        "number" : null,
+        "protocol" : "tcp"
+      }, {
+        "name" : "social_graph_service_out",
+        "number" : null,
+        "protocol" : "tcp"
+      }, {
+        "name" : "user_service_out",
+        "number" : null,
+        "protocol" : "tcp"
+      }, {
+        "name" : "user_timeline_service_out",
+        "number" : null,
+        "protocol" : "tcp"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "frontend"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "nginx-thrift-build",
+        "exposure" : "external"
+      }
+    }, {
+      "name" : "media-frontend",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "http_in",
+        "number" : 8080,
+        "protocol" : "http"
+      }, {
+        "name" : "jaeger_agent_out",
+        "number" : null,
+        "protocol" : "udp"
+      }, {
+        "name" : "media_mongodb_out",
+        "number" : null,
+        "protocol" : "tcp"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "frontend"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "media-frontend-build",
+        "exposure" : "external"
+      }
+    }, {
+      "name" : "compose-post-service",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "nginx_in",
+        "number" : null,
+        "protocol" : "http"
+      }, {
+        "name" : "text_out",
+        "number" : null,
+        "protocol" : "tcp"
+      }, {
+        "name" : "uniqueid_out",
+        "number" : null,
+        "protocol" : "tcp"
+      }, {
+        "name" : "media_out",
+        "number" : null,
+        "protocol" : "tcp"
+      }, {
+        "name" : "poststorage_out",
+        "number" : null,
+        "protocol" : "tcp"
+      }, {
+        "name" : "usertimeline_out",
+        "number" : null,
+        "protocol" : "tcp"
+      }, {
+        "name" : "user_out",
+        "number" : null,
+        "protocol" : "tcp"
+      }, {
+        "name" : "hometimeline_out",
+        "number" : null,
+        "protocol" : "tcp"
+      }, {
+        "name" : "jaeger_agent_out",
+        "number" : null,
+        "protocol" : "udp"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "post"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "compose-post-service-build",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "text-service",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "post_in",
+        "number" : null,
+        "protocol" : "tcp"
+      }, {
+        "name" : "jaeger_agent_out",
+        "number" : null,
+        "protocol" : "udp"
+      }, {
+        "name" : "url_shorten_service_out",
+        "number" : null,
+        "protocol" : "tcp"
+      }, {
+        "name" : "user_mention_service_out",
+        "number" : null,
+        "protocol" : "tcp"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "post"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "text-service-build",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "unique-id-service",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "post_in",
+        "number" : null,
+        "protocol" : "tcp"
+      }, {
+        "name" : "jaeger_agent_out",
+        "number" : null,
+        "protocol" : "udp"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "post"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "unique-id-service-build",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "user-mention-service",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "jaeger_agent_out",
+        "number" : null,
+        "protocol" : "udp"
+      }, {
+        "name" : "in",
+        "number" : null,
+        "protocol" : "tcp"
+      }, {
+        "name" : "user_memcached_out",
+        "number" : null,
+        "protocol" : "tcp"
+      }, {
+        "name" : "user_mongodb_out",
+        "number" : null,
+        "protocol" : "tcp"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "post"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "user-mention-service-build",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "media-service",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "post_in",
+        "number" : null,
+        "protocol" : "tcp"
+      }, {
+        "name" : "jaeger_agent_out",
+        "number" : null,
+        "protocol" : "udp"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "media"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "media-service-build",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "media-mongodb",
+      "type" : "Data",
+      "ports" : [ {
+        "name" : "in",
+        "number" : null,
+        "protocol" : "tcp"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "media",
+        "DataClass" : "media"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "media-mongodb-build",
+        "persistent" : false,
+        "storage" : "unspecified",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "url-shorten-service",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "db_out",
+        "number" : null,
+        "protocol" : "tcp"
+      }, {
+        "name" : "url_shorten_memcached_out",
+        "number" : null,
+        "protocol" : "tcp"
+      }, {
+        "name" : "jaeger_agent_out",
+        "number" : null,
+        "protocol" : "udp"
+      }, {
+        "name" : "in",
+        "number" : null,
+        "protocol" : "tcp"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "post"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "url-shorten-service-build",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "url-shorten-mongodb",
+      "type" : "Data",
+      "ports" : [ {
+        "name" : "urlshorten_in",
+        "number" : 27017,
+        "protocol" : "tcp"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "post",
+        "DataClass" : "url"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "url-shorten-mongodb-build",
+        "persistent" : false,
+        "storage" : "unspecified",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "post-storage-service",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "post_in",
+        "number" : 9090,
+        "protocol" : "tcp"
+      }, {
+        "name" : "db_out",
+        "number" : null,
+        "protocol" : "tcp"
+      }, {
+        "name" : "post_storage_memcached_out",
+        "number" : null,
+        "protocol" : "tcp"
+      }, {
+        "name" : "jaeger_agent_out",
+        "number" : null,
+        "protocol" : "udp"
+      }, {
+        "name" : "in",
+        "number" : null,
+        "protocol" : "tcp"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "post"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "post-storage-service-build",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "post-storage-mongodb",
+      "type" : "Data",
+      "ports" : [ {
+        "name" : "poststorage_in",
+        "number" : 27017,
+        "protocol" : "tcp"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "post",
+        "DataClass" : "post"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "post-storage-mongodb-build",
+        "persistent" : false,
+        "storage" : "unspecified",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "user-timeline-service",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "post_in",
+        "number" : null,
+        "protocol" : "tcp"
+      }, {
+        "name" : "db_out",
+        "number" : null,
+        "protocol" : "tcp"
+      }, {
+        "name" : "user_timeline_redis_out",
+        "number" : null,
+        "protocol" : "tcp"
+      }, {
+        "name" : "jaeger_agent_out",
+        "number" : null,
+        "protocol" : "udp"
+      }, {
+        "name" : "post_storage_service_out",
+        "number" : null,
+        "protocol" : "tcp"
+      }, {
+        "name" : "in",
+        "number" : null,
+        "protocol" : "tcp"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "timeline"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "user-timeline-service-build",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "user-timeline-mongodb",
+      "type" : "Data",
+      "ports" : [ {
+        "name" : "usertimeline_in",
+        "number" : 27017,
+        "protocol" : "tcp"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "timeline",
+        "DataClass" : "timeline"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "user-timeline-mongodb-build",
+        "persistent" : false,
+        "storage" : "unspecified",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "social-graph-service",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "db_out",
+        "number" : null,
+        "protocol" : "tcp"
+      }, {
+        "name" : "social_graph_redis_out",
+        "number" : null,
+        "protocol" : "tcp"
+      }, {
+        "name" : "jaeger_agent_out",
+        "number" : null,
+        "protocol" : "udp"
+      }, {
+        "name" : "in",
+        "number" : null,
+        "protocol" : "tcp"
+      }, {
+        "name" : "user_service_out",
+        "number" : null,
+        "protocol" : "tcp"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "social"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "social-graph-service-build",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "social-graph-mongodb",
+      "type" : "Data",
+      "ports" : [ {
+        "name" : "socialgraph_in",
+        "number" : 27017,
+        "protocol" : "tcp"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "social",
+        "DataClass" : "social"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "social-graph-mongodb-build",
+        "persistent" : false,
+        "storage" : "unspecified",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "user-service",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "post_in",
+        "number" : null,
+        "protocol" : "tcp"
+      }, {
+        "name" : "db_out",
+        "number" : null,
+        "protocol" : "tcp"
+      }, {
+        "name" : "user_memcached_out",
+        "number" : null,
+        "protocol" : "tcp"
+      }, {
+        "name" : "jaeger_agent_out",
+        "number" : null,
+        "protocol" : "udp"
+      }, {
+        "name" : "in",
+        "number" : null,
+        "protocol" : "tcp"
+      }, {
+        "name" : "social_graph_service_out",
+        "number" : null,
+        "protocol" : "tcp"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "account"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "user-service-build",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "user-mongodb",
+      "type" : "Data",
+      "ports" : [ {
+        "name" : "user_in",
+        "number" : 27017,
+        "protocol" : "tcp"
+      }, {
+        "name" : "in",
+        "number" : null,
+        "protocol" : "tcp"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "account",
+        "DataClass" : "account"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "user-mongodb-build",
+        "persistent" : false,
+        "storage" : "unspecified",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "home-timeline-service",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "post_in",
+        "number" : null,
+        "protocol" : "tcp"
+      }, {
+        "name" : "home_timeline_redis_out",
+        "number" : null,
+        "protocol" : "tcp"
+      }, {
+        "name" : "jaeger_agent_out",
+        "number" : null,
+        "protocol" : "udp"
+      }, {
+        "name" : "post_storage_service_out",
+        "number" : null,
+        "protocol" : "tcp"
+      }, {
+        "name" : "social_graph_service_out",
+        "number" : null,
+        "protocol" : "tcp"
+      }, {
+        "name" : "in",
+        "number" : null,
+        "protocol" : "tcp"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "timeline"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "home-timeline-service-build",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "home-timeline-redis",
+      "type" : "Data",
+      "ports" : [ {
+        "name" : "in",
+        "number" : 6379,
+        "protocol" : "tcp"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "timeline"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "home-timeline-redis-build",
+        "persistent" : false,
+        "storage" : "unspecified",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "social-graph-redis",
+      "type" : "Data",
+      "ports" : [ {
+        "name" : "in",
+        "number" : 6379,
+        "protocol" : "tcp"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "social"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "social-graph-redis-build",
+        "persistent" : false,
+        "storage" : "unspecified",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "user-timeline-redis",
+      "type" : "Data",
+      "ports" : [ {
+        "name" : "in",
+        "number" : 6379,
+        "protocol" : "tcp"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "timeline"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "user-timeline-redis-build",
+        "persistent" : false,
+        "storage" : "unspecified",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "media-memcached",
+      "type" : "Data",
+      "ports" : [ {
+        "name" : "in",
+        "number" : 11211,
+        "protocol" : "tcp"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "media"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "media-memcached-build",
+        "persistent" : false,
+        "storage" : "unspecified",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "post-storage-memcached",
+      "type" : "Data",
+      "ports" : [ {
+        "name" : "in",
+        "number" : 11211,
+        "protocol" : "tcp"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "post"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "post-storage-memcached-build",
+        "persistent" : false,
+        "storage" : "unspecified",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "url-shorten-memcached",
+      "type" : "Data",
+      "ports" : [ {
+        "name" : "in",
+        "number" : 11211,
+        "protocol" : "tcp"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "post"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "url-shorten-memcached-build",
+        "persistent" : false,
+        "storage" : "unspecified",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "user-memcached",
+      "type" : "Data",
+      "ports" : [ {
+        "name" : "in",
+        "number" : 11211,
+        "protocol" : "tcp"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "account"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "user-memcached-build",
+        "persistent" : false,
+        "storage" : "unspecified",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "jaeger-agent",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "in",
+        "number" : 6831,
+        "protocol" : "udp"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "observability"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "jaeger-agent-build",
+        "exposure" : "internal"
+      }
+    } ],
+    "connectors" : [ {
+      "name" : "Internet",
+      "external" : true,
+      "protocol" : "http"
+    }, {
+      "name" : "MediaInternet",
+      "external" : true,
+      "protocol" : "http"
+    }, {
+      "name" : "Nginx_to_Post",
+      "external" : false,
+      "protocol" : "http"
+    }, {
+      "name" : "Post_to_Text",
+      "external" : false,
+      "protocol" : "tcp"
+    }, {
+      "name" : "Post_to_UniqueId",
+      "external" : false,
+      "protocol" : "tcp"
+    }, {
+      "name" : "Post_to_Media",
+      "external" : false,
+      "protocol" : "tcp"
+    }, {
+      "name" : "Post_to_PostStorage",
+      "external" : false,
+      "protocol" : "tcp"
+    }, {
+      "name" : "Post_to_UserTimeline",
+      "external" : false,
+      "protocol" : "tcp"
+    }, {
+      "name" : "Post_to_User",
+      "external" : false,
+      "protocol" : "tcp"
+    }, {
+      "name" : "Post_to_HomeTimeline",
+      "external" : false,
+      "protocol" : "tcp"
+    }, {
+      "name" : "UrlShorten_to_DB",
+      "external" : false,
+      "protocol" : "tcp"
+    }, {
+      "name" : "PostStorage_to_DB",
+      "external" : false,
+      "protocol" : "tcp"
+    }, {
+      "name" : "UserTimeline_to_DB",
+      "external" : false,
+      "protocol" : "tcp"
+    }, {
+      "name" : "SocialGraph_to_DB",
+      "external" : false,
+      "protocol" : "tcp"
+    }, {
+      "name" : "User_to_DB",
+      "external" : false,
+      "protocol" : "tcp"
+    }, {
+      "name" : "home-timeline-service_to_home-timeline-redis",
+      "external" : false,
+      "protocol" : "tcp"
+    }, {
+      "name" : "social-graph-service_to_social-graph-redis",
+      "external" : false,
+      "protocol" : "tcp"
+    }, {
+      "name" : "user-timeline-service_to_user-timeline-redis",
+      "external" : false,
+      "protocol" : "tcp"
+    }, {
+      "name" : "post-storage-service_to_post-storage-memcached",
+      "external" : false,
+      "protocol" : "tcp"
+    }, {
+      "name" : "url-shorten-service_to_url-shorten-memcached",
+      "external" : false,
+      "protocol" : "tcp"
+    }, {
+      "name" : "user-service_to_user-memcached",
+      "external" : false,
+      "protocol" : "tcp"
+    }, {
+      "name" : "social-graph-service_to_jaeger-agent",
+      "external" : false,
+      "protocol" : "udp"
+    }, {
+      "name" : "compose-post-service_to_jaeger-agent",
+      "external" : false,
+      "protocol" : "udp"
+    }, {
+      "name" : "post-storage-service_to_jaeger-agent",
+      "external" : false,
+      "protocol" : "udp"
+    }, {
+      "name" : "user-timeline-service_to_jaeger-agent",
+      "external" : false,
+      "protocol" : "udp"
+    }, {
+      "name" : "url-shorten-service_to_jaeger-agent",
+      "external" : false,
+      "protocol" : "udp"
+    }, {
+      "name" : "user-service_to_jaeger-agent",
+      "external" : false,
+      "protocol" : "udp"
+    }, {
+      "name" : "media-service_to_jaeger-agent",
+      "external" : false,
+      "protocol" : "udp"
+    }, {
+      "name" : "text-service_to_jaeger-agent",
+      "external" : false,
+      "protocol" : "udp"
+    }, {
+      "name" : "unique-id-service_to_jaeger-agent",
+      "external" : false,
+      "protocol" : "udp"
+    }, {
+      "name" : "user-mention-service_to_jaeger-agent",
+      "external" : false,
+      "protocol" : "udp"
+    }, {
+      "name" : "home-timeline-service_to_jaeger-agent",
+      "external" : false,
+      "protocol" : "udp"
+    }, {
+      "name" : "nginx-thrift_to_jaeger-agent",
+      "external" : false,
+      "protocol" : "udp"
+    }, {
+      "name" : "media-frontend_to_jaeger-agent",
+      "external" : false,
+      "protocol" : "udp"
+    }, {
+      "name" : "home-timeline-service_to_post-storage-service",
+      "external" : false,
+      "protocol" : "tcp"
+    }, {
+      "name" : "home-timeline-service_to_social-graph-service",
+      "external" : false,
+      "protocol" : "tcp"
+    }, {
+      "name" : "social-graph-service_to_user-service",
+      "external" : false,
+      "protocol" : "tcp"
+    }, {
+      "name" : "text-service_to_url-shorten-service",
+      "external" : false,
+      "protocol" : "tcp"
+    }, {
+      "name" : "text-service_to_user-mention-service",
+      "external" : false,
+      "protocol" : "tcp"
+    }, {
+      "name" : "user-mention-service_to_user-memcached",
+      "external" : false,
+      "protocol" : "tcp"
+    }, {
+      "name" : "user-mention-service_to_user-mongodb",
+      "external" : false,
+      "protocol" : "tcp"
+    }, {
+      "name" : "user-service_to_social-graph-service",
+      "external" : false,
+      "protocol" : "tcp"
+    }, {
+      "name" : "user-timeline-service_to_post-storage-service",
+      "external" : false,
+      "protocol" : "tcp"
+    }, {
+      "name" : "nginx-thrift_to_home-timeline-service",
+      "external" : false,
+      "protocol" : "tcp"
+    }, {
+      "name" : "nginx-thrift_to_social-graph-service",
+      "external" : false,
+      "protocol" : "tcp"
+    }, {
+      "name" : "nginx-thrift_to_user-service",
+      "external" : false,
+      "protocol" : "tcp"
+    }, {
+      "name" : "nginx-thrift_to_user-timeline-service",
+      "external" : false,
+      "protocol" : "tcp"
+    }, {
+      "name" : "media-frontend_to_media-mongodb",
+      "external" : false,
+      "protocol" : "tcp"
+    } ],
+    "links" : [ {
+      "portRef" : "nginx-thrift.http_in",
+      "connectorName" : "Internet",
+      "direction" : "IN"
+    }, {
+      "portRef" : "media-frontend.http_in",
+      "connectorName" : "MediaInternet",
+      "direction" : "IN"
+    }, {
+      "portRef" : "nginx-thrift.post_out",
+      "connectorName" : "Nginx_to_Post",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "compose-post-service.nginx_in",
+      "connectorName" : "Nginx_to_Post",
+      "direction" : "IN"
+    }, {
+      "portRef" : "compose-post-service.text_out",
+      "connectorName" : "Post_to_Text",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "text-service.post_in",
+      "connectorName" : "Post_to_Text",
+      "direction" : "IN"
+    }, {
+      "portRef" : "compose-post-service.uniqueid_out",
+      "connectorName" : "Post_to_UniqueId",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "unique-id-service.post_in",
+      "connectorName" : "Post_to_UniqueId",
+      "direction" : "IN"
+    }, {
+      "portRef" : "compose-post-service.media_out",
+      "connectorName" : "Post_to_Media",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "media-service.post_in",
+      "connectorName" : "Post_to_Media",
+      "direction" : "IN"
+    }, {
+      "portRef" : "compose-post-service.poststorage_out",
+      "connectorName" : "Post_to_PostStorage",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "post-storage-service.post_in",
+      "connectorName" : "Post_to_PostStorage",
+      "direction" : "IN"
+    }, {
+      "portRef" : "compose-post-service.usertimeline_out",
+      "connectorName" : "Post_to_UserTimeline",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "user-timeline-service.post_in",
+      "connectorName" : "Post_to_UserTimeline",
+      "direction" : "IN"
+    }, {
+      "portRef" : "compose-post-service.user_out",
+      "connectorName" : "Post_to_User",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "user-service.post_in",
+      "connectorName" : "Post_to_User",
+      "direction" : "IN"
+    }, {
+      "portRef" : "compose-post-service.hometimeline_out",
+      "connectorName" : "Post_to_HomeTimeline",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "home-timeline-service.post_in",
+      "connectorName" : "Post_to_HomeTimeline",
+      "direction" : "IN"
+    }, {
+      "portRef" : "url-shorten-service.db_out",
+      "connectorName" : "UrlShorten_to_DB",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "url-shorten-mongodb.urlshorten_in",
+      "connectorName" : "UrlShorten_to_DB",
+      "direction" : "IN"
+    }, {
+      "portRef" : "post-storage-service.db_out",
+      "connectorName" : "PostStorage_to_DB",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "post-storage-mongodb.poststorage_in",
+      "connectorName" : "PostStorage_to_DB",
+      "direction" : "IN"
+    }, {
+      "portRef" : "user-timeline-service.db_out",
+      "connectorName" : "UserTimeline_to_DB",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "user-timeline-mongodb.usertimeline_in",
+      "connectorName" : "UserTimeline_to_DB",
+      "direction" : "IN"
+    }, {
+      "portRef" : "social-graph-service.db_out",
+      "connectorName" : "SocialGraph_to_DB",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "social-graph-mongodb.socialgraph_in",
+      "connectorName" : "SocialGraph_to_DB",
+      "direction" : "IN"
+    }, {
+      "portRef" : "user-service.db_out",
+      "connectorName" : "User_to_DB",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "user-mongodb.user_in",
+      "connectorName" : "User_to_DB",
+      "direction" : "IN"
+    }, {
+      "portRef" : "home-timeline-service.home_timeline_redis_out",
+      "connectorName" : "home-timeline-service_to_home-timeline-redis",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "home-timeline-redis.in",
+      "connectorName" : "home-timeline-service_to_home-timeline-redis",
+      "direction" : "IN"
+    }, {
+      "portRef" : "social-graph-service.social_graph_redis_out",
+      "connectorName" : "social-graph-service_to_social-graph-redis",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "social-graph-redis.in",
+      "connectorName" : "social-graph-service_to_social-graph-redis",
+      "direction" : "IN"
+    }, {
+      "portRef" : "user-timeline-service.user_timeline_redis_out",
+      "connectorName" : "user-timeline-service_to_user-timeline-redis",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "user-timeline-redis.in",
+      "connectorName" : "user-timeline-service_to_user-timeline-redis",
+      "direction" : "IN"
+    }, {
+      "portRef" : "post-storage-service.post_storage_memcached_out",
+      "connectorName" : "post-storage-service_to_post-storage-memcached",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "post-storage-memcached.in",
+      "connectorName" : "post-storage-service_to_post-storage-memcached",
+      "direction" : "IN"
+    }, {
+      "portRef" : "url-shorten-service.url_shorten_memcached_out",
+      "connectorName" : "url-shorten-service_to_url-shorten-memcached",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "url-shorten-memcached.in",
+      "connectorName" : "url-shorten-service_to_url-shorten-memcached",
+      "direction" : "IN"
+    }, {
+      "portRef" : "user-service.user_memcached_out",
+      "connectorName" : "user-service_to_user-memcached",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "user-memcached.in",
+      "connectorName" : "user-service_to_user-memcached",
+      "direction" : "IN"
+    }, {
+      "portRef" : "social-graph-service.jaeger_agent_out",
+      "connectorName" : "social-graph-service_to_jaeger-agent",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "jaeger-agent.in",
+      "connectorName" : "social-graph-service_to_jaeger-agent",
+      "direction" : "IN"
+    }, {
+      "portRef" : "compose-post-service.jaeger_agent_out",
+      "connectorName" : "compose-post-service_to_jaeger-agent",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "jaeger-agent.in",
+      "connectorName" : "compose-post-service_to_jaeger-agent",
+      "direction" : "IN"
+    }, {
+      "portRef" : "post-storage-service.jaeger_agent_out",
+      "connectorName" : "post-storage-service_to_jaeger-agent",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "jaeger-agent.in",
+      "connectorName" : "post-storage-service_to_jaeger-agent",
+      "direction" : "IN"
+    }, {
+      "portRef" : "user-timeline-service.jaeger_agent_out",
+      "connectorName" : "user-timeline-service_to_jaeger-agent",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "jaeger-agent.in",
+      "connectorName" : "user-timeline-service_to_jaeger-agent",
+      "direction" : "IN"
+    }, {
+      "portRef" : "url-shorten-service.jaeger_agent_out",
+      "connectorName" : "url-shorten-service_to_jaeger-agent",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "jaeger-agent.in",
+      "connectorName" : "url-shorten-service_to_jaeger-agent",
+      "direction" : "IN"
+    }, {
+      "portRef" : "user-service.jaeger_agent_out",
+      "connectorName" : "user-service_to_jaeger-agent",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "jaeger-agent.in",
+      "connectorName" : "user-service_to_jaeger-agent",
+      "direction" : "IN"
+    }, {
+      "portRef" : "media-service.jaeger_agent_out",
+      "connectorName" : "media-service_to_jaeger-agent",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "jaeger-agent.in",
+      "connectorName" : "media-service_to_jaeger-agent",
+      "direction" : "IN"
+    }, {
+      "portRef" : "text-service.jaeger_agent_out",
+      "connectorName" : "text-service_to_jaeger-agent",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "jaeger-agent.in",
+      "connectorName" : "text-service_to_jaeger-agent",
+      "direction" : "IN"
+    }, {
+      "portRef" : "unique-id-service.jaeger_agent_out",
+      "connectorName" : "unique-id-service_to_jaeger-agent",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "jaeger-agent.in",
+      "connectorName" : "unique-id-service_to_jaeger-agent",
+      "direction" : "IN"
+    }, {
+      "portRef" : "user-mention-service.jaeger_agent_out",
+      "connectorName" : "user-mention-service_to_jaeger-agent",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "jaeger-agent.in",
+      "connectorName" : "user-mention-service_to_jaeger-agent",
+      "direction" : "IN"
+    }, {
+      "portRef" : "home-timeline-service.jaeger_agent_out",
+      "connectorName" : "home-timeline-service_to_jaeger-agent",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "jaeger-agent.in",
+      "connectorName" : "home-timeline-service_to_jaeger-agent",
+      "direction" : "IN"
+    }, {
+      "portRef" : "nginx-thrift.jaeger_agent_out",
+      "connectorName" : "nginx-thrift_to_jaeger-agent",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "jaeger-agent.in",
+      "connectorName" : "nginx-thrift_to_jaeger-agent",
+      "direction" : "IN"
+    }, {
+      "portRef" : "media-frontend.jaeger_agent_out",
+      "connectorName" : "media-frontend_to_jaeger-agent",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "jaeger-agent.in",
+      "connectorName" : "media-frontend_to_jaeger-agent",
+      "direction" : "IN"
+    }, {
+      "portRef" : "home-timeline-service.post_storage_service_out",
+      "connectorName" : "home-timeline-service_to_post-storage-service",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "post-storage-service.in",
+      "connectorName" : "home-timeline-service_to_post-storage-service",
+      "direction" : "IN"
+    }, {
+      "portRef" : "home-timeline-service.social_graph_service_out",
+      "connectorName" : "home-timeline-service_to_social-graph-service",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "social-graph-service.in",
+      "connectorName" : "home-timeline-service_to_social-graph-service",
+      "direction" : "IN"
+    }, {
+      "portRef" : "social-graph-service.user_service_out",
+      "connectorName" : "social-graph-service_to_user-service",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "user-service.in",
+      "connectorName" : "social-graph-service_to_user-service",
+      "direction" : "IN"
+    }, {
+      "portRef" : "text-service.url_shorten_service_out",
+      "connectorName" : "text-service_to_url-shorten-service",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "url-shorten-service.in",
+      "connectorName" : "text-service_to_url-shorten-service",
+      "direction" : "IN"
+    }, {
+      "portRef" : "text-service.user_mention_service_out",
+      "connectorName" : "text-service_to_user-mention-service",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "user-mention-service.in",
+      "connectorName" : "text-service_to_user-mention-service",
+      "direction" : "IN"
+    }, {
+      "portRef" : "user-mention-service.user_memcached_out",
+      "connectorName" : "user-mention-service_to_user-memcached",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "user-memcached.in",
+      "connectorName" : "user-mention-service_to_user-memcached",
+      "direction" : "IN"
+    }, {
+      "portRef" : "user-mention-service.user_mongodb_out",
+      "connectorName" : "user-mention-service_to_user-mongodb",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "user-mongodb.in",
+      "connectorName" : "user-mention-service_to_user-mongodb",
+      "direction" : "IN"
+    }, {
+      "portRef" : "user-service.social_graph_service_out",
+      "connectorName" : "user-service_to_social-graph-service",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "social-graph-service.in",
+      "connectorName" : "user-service_to_social-graph-service",
+      "direction" : "IN"
+    }, {
+      "portRef" : "user-timeline-service.post_storage_service_out",
+      "connectorName" : "user-timeline-service_to_post-storage-service",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "post-storage-service.in",
+      "connectorName" : "user-timeline-service_to_post-storage-service",
+      "direction" : "IN"
+    }, {
+      "portRef" : "nginx-thrift.home_timeline_service_out",
+      "connectorName" : "nginx-thrift_to_home-timeline-service",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "home-timeline-service.in",
+      "connectorName" : "nginx-thrift_to_home-timeline-service",
+      "direction" : "IN"
+    }, {
+      "portRef" : "nginx-thrift.social_graph_service_out",
+      "connectorName" : "nginx-thrift_to_social-graph-service",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "social-graph-service.in",
+      "connectorName" : "nginx-thrift_to_social-graph-service",
+      "direction" : "IN"
+    }, {
+      "portRef" : "nginx-thrift.user_service_out",
+      "connectorName" : "nginx-thrift_to_user-service",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "user-service.in",
+      "connectorName" : "nginx-thrift_to_user-service",
+      "direction" : "IN"
+    }, {
+      "portRef" : "nginx-thrift.user_timeline_service_out",
+      "connectorName" : "nginx-thrift_to_user-timeline-service",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "user-timeline-service.in",
+      "connectorName" : "nginx-thrift_to_user-timeline-service",
+      "direction" : "IN"
+    }, {
+      "portRef" : "media-frontend.media_mongodb_out",
+      "connectorName" : "media-frontend_to_media-mongodb",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "media-mongodb.in",
+      "connectorName" : "media-frontend_to_media-mongodb",
+      "direction" : "IN"
+    } ],
+    "implementations" : [ {
+      "name" : "nginx-thrift-build",
+      "runtime" : "container",
+      "image" : "yg397/openresty-thrift:xenial",
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "media-frontend-build",
+      "runtime" : "container",
+      "image" : "yg397/media-frontend:xenial",
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "compose-post-service-build",
+      "runtime" : "container",
+      "image" : "deathstarbench/social-network-microservices:latest",
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "text-service-build",
+      "runtime" : "container",
+      "image" : "deathstarbench/social-network-microservices:latest",
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "unique-id-service-build",
+      "runtime" : "container",
+      "image" : "deathstarbench/social-network-microservices:latest",
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "user-mention-service-build",
+      "runtime" : "container",
+      "image" : "deathstarbench/social-network-microservices:latest",
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "media-service-build",
+      "runtime" : "container",
+      "image" : "deathstarbench/social-network-microservices:latest",
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "media-mongodb-build",
+      "runtime" : "container",
+      "image" : "mongo:4.4.6",
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "url-shorten-service-build",
+      "runtime" : "container",
+      "image" : "deathstarbench/social-network-microservices:latest",
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "url-shorten-mongodb-build",
+      "runtime" : "container",
+      "image" : "mongo:4.4.6",
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "post-storage-service-build",
+      "runtime" : "container",
+      "image" : "deathstarbench/social-network-microservices:latest",
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "post-storage-mongodb-build",
+      "runtime" : "container",
+      "image" : "mongo:4.4.6",
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "user-timeline-service-build",
+      "runtime" : "container",
+      "image" : "deathstarbench/social-network-microservices:latest",
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "user-timeline-mongodb-build",
+      "runtime" : "container",
+      "image" : "mongo:4.4.6",
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "social-graph-service-build",
+      "runtime" : "container",
+      "image" : "deathstarbench/social-network-microservices:latest",
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "social-graph-mongodb-build",
+      "runtime" : "container",
+      "image" : "mongo:4.4.6",
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "user-service-build",
+      "runtime" : "container",
+      "image" : "deathstarbench/social-network-microservices:latest",
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "user-mongodb-build",
+      "runtime" : "container",
+      "image" : "mongo:4.4.6",
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "home-timeline-service-build",
+      "runtime" : "container",
+      "image" : "deathstarbench/social-network-microservices:latest",
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "home-timeline-redis-build",
+      "runtime" : "container",
+      "image" : "redis",
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "social-graph-redis-build",
+      "runtime" : "container",
+      "image" : "redis",
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "user-timeline-redis-build",
+      "runtime" : "container",
+      "image" : "redis",
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "media-memcached-build",
+      "runtime" : "container",
+      "image" : "memcached",
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "post-storage-memcached-build",
+      "runtime" : "container",
+      "image" : "memcached",
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "url-shorten-memcached-build",
+      "runtime" : "container",
+      "image" : "memcached",
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "user-memcached-build",
+      "runtime" : "container",
+      "image" : "memcached",
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "jaeger-agent-build",
+      "runtime" : "container",
+      "image" : "jaegertracing/all-in-one:latest",
+      "resources" : { },
+      "config" : { }
+    } ]
+  },
+  "security" : {
+    "attributes" : [ {
+      "name" : "Domain",
+      "values" : [ "frontend", "post", "media", "timeline", "social", "account", "observability" ]
+    }, {
+      "name" : "DataClass",
+      "values" : [ "account" ]
+    } ],
+    "contexts" : [ {
+      "name" : "frontendCtx",
+      "conditions" : [ {
+        "attribute" : "Domain",
+        "value" : "frontend"
+      } ]
+    }, {
+      "name" : "postCtx",
+      "conditions" : [ {
+        "attribute" : "Domain",
+        "value" : "post"
+      } ]
+    }, {
+      "name" : "accountDbCtx",
+      "conditions" : [ {
+        "attribute" : "DataClass",
+        "value" : "account"
+      } ]
+    }, {
+      "name" : "viaAccount",
+      "conditions" : [ {
+        "attribute" : "Domain",
+        "value" : "account"
+      } ]
+    } ],
+    "rules" : [ {
+      "type" : "Isolation",
+      "sctx" : {
+        "name" : "accountDbCtx"
+      },
+      "tctx" : {
+        "name" : "frontendCtx"
+      }
+    }, {
+      "type" : "Availability",
+      "target" : {
+        "name" : "frontendCtx"
+      },
+      "level" : "medium"
+    }, {
+      "type" : "Availability",
+      "target" : {
+        "name" : "postCtx"
+      },
+      "level" : "medium"
+    } ]
+  },
+  "coverage" : {
+    "frontendCtx" : [ {
+      "name" : "nginx-thrift",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "frontend"
+      },
+      "ports" : [ "http_in", "post_out", "jaeger_agent_out", "home_timeline_service_out", "social_graph_service_out", "user_service_out", "user_timeline_service_out" ]
+    }, {
+      "name" : "media-frontend",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "frontend"
+      },
+      "ports" : [ "http_in", "jaeger_agent_out", "media_mongodb_out" ]
+    } ],
+    "postCtx" : [ {
+      "name" : "compose-post-service",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "post"
+      },
+      "ports" : [ "nginx_in", "text_out", "uniqueid_out", "media_out", "poststorage_out", "usertimeline_out", "user_out", "hometimeline_out", "jaeger_agent_out" ]
+    }, {
+      "name" : "text-service",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "post"
+      },
+      "ports" : [ "post_in", "jaeger_agent_out", "url_shorten_service_out", "user_mention_service_out" ]
+    }, {
+      "name" : "unique-id-service",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "post"
+      },
+      "ports" : [ "post_in", "jaeger_agent_out" ]
+    }, {
+      "name" : "user-mention-service",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "post"
+      },
+      "ports" : [ "jaeger_agent_out", "in", "user_memcached_out", "user_mongodb_out" ]
+    }, {
+      "name" : "url-shorten-service",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "post"
+      },
+      "ports" : [ "db_out", "url_shorten_memcached_out", "jaeger_agent_out", "in" ]
+    }, {
+      "name" : "url-shorten-mongodb",
+      "type" : "Data",
+      "attributes" : {
+        "Domain" : "post",
+        "DataClass" : "url"
+      },
+      "ports" : [ "urlshorten_in" ]
+    }, {
+      "name" : "post-storage-service",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "post"
+      },
+      "ports" : [ "post_in", "db_out", "post_storage_memcached_out", "jaeger_agent_out", "in" ]
+    }, {
+      "name" : "post-storage-mongodb",
+      "type" : "Data",
+      "attributes" : {
+        "Domain" : "post",
+        "DataClass" : "post"
+      },
+      "ports" : [ "poststorage_in" ]
+    }, {
+      "name" : "post-storage-memcached",
+      "type" : "Data",
+      "attributes" : {
+        "Domain" : "post"
+      },
+      "ports" : [ "in" ]
+    }, {
+      "name" : "url-shorten-memcached",
+      "type" : "Data",
+      "attributes" : {
+        "Domain" : "post"
+      },
+      "ports" : [ "in" ]
+    } ],
+    "accountDbCtx" : [ {
+      "name" : "user-mongodb",
+      "type" : "Data",
+      "attributes" : {
+        "Domain" : "account",
+        "DataClass" : "account"
+      },
+      "ports" : [ "user_in", "in" ]
+    } ],
+    "viaAccount" : [ {
+      "name" : "user-service",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "account"
+      },
+      "ports" : [ "post_in", "db_out", "user_memcached_out", "jaeger_agent_out", "in", "social_graph_service_out" ]
+    }, {
+      "name" : "user-mongodb",
+      "type" : "Data",
+      "attributes" : {
+        "Domain" : "account",
+        "DataClass" : "account"
+      },
+      "ports" : [ "user_in", "in" ]
+    }, {
+      "name" : "user-memcached",
+      "type" : "Data",
+      "attributes" : {
+        "Domain" : "account"
+      },
+      "ports" : [ "in" ]
+    } ]
+  },
+  "resolvedRules" : [ {
+    "type" : "Isolation",
+    "sctx" : [ {
+      "name" : "user-mongodb",
+      "type" : "Data",
+      "attributes" : {
+        "Domain" : "account",
+        "DataClass" : "account"
+      },
+      "ports" : [ "user_in", "in" ]
+    } ],
+    "tctx" : [ {
+      "name" : "nginx-thrift",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "frontend"
+      },
+      "ports" : [ "http_in", "post_out", "jaeger_agent_out", "home_timeline_service_out", "social_graph_service_out", "user_service_out", "user_timeline_service_out" ]
+    }, {
+      "name" : "media-frontend",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "frontend"
+      },
+      "ports" : [ "http_in", "jaeger_agent_out", "media_mongodb_out" ]
+    } ],
+    "actx" : [ {
+      "name" : "user-service",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "account"
+      },
+      "ports" : [ "post_in", "db_out", "user_memcached_out", "jaeger_agent_out", "in", "social_graph_service_out" ]
+    }, {
+      "name" : "user-mongodb",
+      "type" : "Data",
+      "attributes" : {
+        "Domain" : "account",
+        "DataClass" : "account"
+      },
+      "ports" : [ "user_in", "in" ]
+    }, {
+      "name" : "user-memcached",
+      "type" : "Data",
+      "attributes" : {
+        "Domain" : "account"
+      },
+      "ports" : [ "in" ]
+    } ]
+  }, {
+    "type" : "Availability",
+    "sctx" : [ {
+      "name" : "nginx-thrift",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "frontend"
+      },
+      "ports" : [ "http_in", "post_out", "jaeger_agent_out", "home_timeline_service_out", "social_graph_service_out", "user_service_out", "user_timeline_service_out" ]
+    }, {
+      "name" : "media-frontend",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "frontend"
+      },
+      "ports" : [ "http_in", "jaeger_agent_out", "media_mongodb_out" ]
+    } ]
+  }, {
+    "type" : "Availability",
+    "sctx" : [ {
+      "name" : "compose-post-service",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "post"
+      },
+      "ports" : [ "nginx_in", "text_out", "uniqueid_out", "media_out", "poststorage_out", "usertimeline_out", "user_out", "hometimeline_out", "jaeger_agent_out" ]
+    }, {
+      "name" : "text-service",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "post"
+      },
+      "ports" : [ "post_in", "jaeger_agent_out", "url_shorten_service_out", "user_mention_service_out" ]
+    }, {
+      "name" : "unique-id-service",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "post"
+      },
+      "ports" : [ "post_in", "jaeger_agent_out" ]
+    }, {
+      "name" : "user-mention-service",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "post"
+      },
+      "ports" : [ "jaeger_agent_out", "in", "user_memcached_out", "user_mongodb_out" ]
+    }, {
+      "name" : "url-shorten-service",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "post"
+      },
+      "ports" : [ "db_out", "url_shorten_memcached_out", "jaeger_agent_out", "in" ]
+    }, {
+      "name" : "url-shorten-mongodb",
+      "type" : "Data",
+      "attributes" : {
+        "Domain" : "post",
+        "DataClass" : "url"
+      },
+      "ports" : [ "urlshorten_in" ]
+    }, {
+      "name" : "post-storage-service",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "post"
+      },
+      "ports" : [ "post_in", "db_out", "post_storage_memcached_out", "jaeger_agent_out", "in" ]
+    }, {
+      "name" : "post-storage-mongodb",
+      "type" : "Data",
+      "attributes" : {
+        "Domain" : "post",
+        "DataClass" : "post"
+      },
+      "ports" : [ "poststorage_in" ]
+    }, {
+      "name" : "post-storage-memcached",
+      "type" : "Data",
+      "attributes" : {
+        "Domain" : "post"
+      },
+      "ports" : [ "in" ]
+    }, {
+      "name" : "url-shorten-memcached",
+      "type" : "Data",
+      "attributes" : {
+        "Domain" : "post"
+      },
+      "ports" : [ "in" ]
+    } ]
+  } ]
+}

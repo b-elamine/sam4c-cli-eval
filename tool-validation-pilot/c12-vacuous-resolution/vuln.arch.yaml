@@ -1,0 +1,14 @@
+name: c12-vacuous-resolution-vuln
+components:
+  - name: Svc
+    type: App
+    attributes: { Domain: service }
+    exposure: internal
+    ports:
+      - { name: p, number: 8080, protocol: http }
+
+connectors:
+  - name: c
+    protocol: http
+links:
+  []

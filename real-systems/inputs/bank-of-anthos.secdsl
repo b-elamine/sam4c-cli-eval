@@ -1,0 +1,15 @@
+#attribute Domain = (frontend, accounts, ledger, observability);
+#attribute DataClass = (account, transaction);
+#attribute Mechanism = (jwt);
+
+#context frontendCtx = (Domain=frontend);
+#context userserviceCtx = (Mechanism=jwt);
+#context ledgerCtx = (Domain=ledger);
+#context accountsDbCtx = (DataClass=account);
+
+#context viaAccounts = (Domain=accounts);
+#property Isolation(accountsDbCtx, frontendCtx, viaAccounts);
+#property Confidentiality(frontendCtx, ledgerCtx);
+#property Authentication(frontendCtx, userserviceCtx) -> ledgerCtx;
+#property Availability(frontendCtx, medium);
+#property Authorization(frontendCtx, ledgerCtx, read, write);

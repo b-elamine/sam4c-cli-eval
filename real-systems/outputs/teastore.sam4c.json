@@ -1,0 +1,601 @@
+{
+  "name" : "teastore",
+  "architecture" : {
+    "name" : "teastore",
+    "components" : [ {
+      "name" : "K8sCluster",
+      "type" : "Worker",
+      "ports" : [ ],
+      "members" : [ ],
+      "attributes" : { },
+      "properties" : { }
+    }, {
+      "name" : "teastore-registry",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "webui_in",
+        "number" : 8080,
+        "protocol" : "http"
+      }, {
+        "name" : "persistence_in",
+        "number" : null,
+        "protocol" : "http"
+      }, {
+        "name" : "auth_in",
+        "number" : null,
+        "protocol" : "http"
+      }, {
+        "name" : "image_in",
+        "number" : null,
+        "protocol" : "http"
+      }, {
+        "name" : "recommender_in",
+        "number" : null,
+        "protocol" : "http"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "platform"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "registry-build",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "teastore-db",
+      "type" : "Data",
+      "ports" : [ {
+        "name" : "persistence_in",
+        "number" : 3306,
+        "protocol" : "tcp"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "catalog",
+        "DataClass" : "product"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "db-build",
+        "persistent" : false,
+        "storage" : "unspecified",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "teastore-persistence",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "registry_out",
+        "number" : null,
+        "protocol" : "http"
+      }, {
+        "name" : "db_out",
+        "number" : null,
+        "protocol" : "tcp"
+      }, {
+        "name" : "webui_in",
+        "number" : 8080,
+        "protocol" : "http"
+      }, {
+        "name" : "in",
+        "number" : null,
+        "protocol" : "http"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "data"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "persistence-build",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "teastore-auth",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "registry_out",
+        "number" : null,
+        "protocol" : "http"
+      }, {
+        "name" : "webui_in",
+        "number" : 8080,
+        "protocol" : "http"
+      }, {
+        "name" : "teastore_persistence_out",
+        "number" : null,
+        "protocol" : "http"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "auth"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "auth-build",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "teastore-image",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "registry_out",
+        "number" : null,
+        "protocol" : "http"
+      }, {
+        "name" : "webui_in",
+        "number" : 8080,
+        "protocol" : "http"
+      }, {
+        "name" : "teastore_persistence_out",
+        "number" : null,
+        "protocol" : "http"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "catalog"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "image-build",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "teastore-recommender",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "registry_out",
+        "number" : null,
+        "protocol" : "http"
+      }, {
+        "name" : "webui_in",
+        "number" : 8080,
+        "protocol" : "http"
+      }, {
+        "name" : "teastore_persistence_out",
+        "number" : null,
+        "protocol" : "http"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "catalog"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "recommender-build",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "teastore-webui",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "http_in",
+        "number" : 8080,
+        "protocol" : "http"
+      }, {
+        "name" : "registry_out",
+        "number" : null,
+        "protocol" : "http"
+      }, {
+        "name" : "auth_out",
+        "number" : null,
+        "protocol" : "http"
+      }, {
+        "name" : "persistence_out",
+        "number" : null,
+        "protocol" : "http"
+      }, {
+        "name" : "image_out",
+        "number" : null,
+        "protocol" : "http"
+      }, {
+        "name" : "recommender_out",
+        "number" : null,
+        "protocol" : "http"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "frontend"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "webui-build",
+        "exposure" : "external"
+      }
+    } ],
+    "connectors" : [ {
+      "name" : "Internet",
+      "external" : true,
+      "protocol" : "http"
+    }, {
+      "name" : "WebUI_to_Registry",
+      "external" : false,
+      "protocol" : "http"
+    }, {
+      "name" : "Persistence_to_Registry",
+      "external" : false,
+      "protocol" : "http"
+    }, {
+      "name" : "Auth_to_Registry",
+      "external" : false,
+      "protocol" : "http"
+    }, {
+      "name" : "Image_to_Registry",
+      "external" : false,
+      "protocol" : "http"
+    }, {
+      "name" : "Recommender_to_Registry",
+      "external" : false,
+      "protocol" : "http"
+    }, {
+      "name" : "Persistence_to_DB",
+      "external" : false,
+      "protocol" : "tcp"
+    }, {
+      "name" : "WebUI_to_Auth",
+      "external" : false,
+      "protocol" : "http"
+    }, {
+      "name" : "WebUI_to_Persistence",
+      "external" : false,
+      "protocol" : "http"
+    }, {
+      "name" : "WebUI_to_Image",
+      "external" : false,
+      "protocol" : "http"
+    }, {
+      "name" : "WebUI_to_Recommender",
+      "external" : false,
+      "protocol" : "http"
+    }, {
+      "name" : "teastore-auth_to_teastore-persistence",
+      "external" : false,
+      "protocol" : "http"
+    }, {
+      "name" : "teastore-image_to_teastore-persistence",
+      "external" : false,
+      "protocol" : "http"
+    }, {
+      "name" : "teastore-recommender_to_teastore-persistence",
+      "external" : false,
+      "protocol" : "http"
+    } ],
+    "links" : [ {
+      "portRef" : "teastore-webui.http_in",
+      "connectorName" : "Internet",
+      "direction" : "IN"
+    }, {
+      "portRef" : "teastore-webui.registry_out",
+      "connectorName" : "WebUI_to_Registry",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "teastore-registry.webui_in",
+      "connectorName" : "WebUI_to_Registry",
+      "direction" : "IN"
+    }, {
+      "portRef" : "teastore-persistence.registry_out",
+      "connectorName" : "Persistence_to_Registry",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "teastore-registry.persistence_in",
+      "connectorName" : "Persistence_to_Registry",
+      "direction" : "IN"
+    }, {
+      "portRef" : "teastore-auth.registry_out",
+      "connectorName" : "Auth_to_Registry",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "teastore-registry.auth_in",
+      "connectorName" : "Auth_to_Registry",
+      "direction" : "IN"
+    }, {
+      "portRef" : "teastore-image.registry_out",
+      "connectorName" : "Image_to_Registry",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "teastore-registry.image_in",
+      "connectorName" : "Image_to_Registry",
+      "direction" : "IN"
+    }, {
+      "portRef" : "teastore-recommender.registry_out",
+      "connectorName" : "Recommender_to_Registry",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "teastore-registry.recommender_in",
+      "connectorName" : "Recommender_to_Registry",
+      "direction" : "IN"
+    }, {
+      "portRef" : "teastore-persistence.db_out",
+      "connectorName" : "Persistence_to_DB",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "teastore-db.persistence_in",
+      "connectorName" : "Persistence_to_DB",
+      "direction" : "IN"
+    }, {
+      "portRef" : "teastore-webui.auth_out",
+      "connectorName" : "WebUI_to_Auth",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "teastore-auth.webui_in",
+      "connectorName" : "WebUI_to_Auth",
+      "direction" : "IN"
+    }, {
+      "portRef" : "teastore-webui.persistence_out",
+      "connectorName" : "WebUI_to_Persistence",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "teastore-persistence.webui_in",
+      "connectorName" : "WebUI_to_Persistence",
+      "direction" : "IN"
+    }, {
+      "portRef" : "teastore-webui.image_out",
+      "connectorName" : "WebUI_to_Image",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "teastore-image.webui_in",
+      "connectorName" : "WebUI_to_Image",
+      "direction" : "IN"
+    }, {
+      "portRef" : "teastore-webui.recommender_out",
+      "connectorName" : "WebUI_to_Recommender",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "teastore-recommender.webui_in",
+      "connectorName" : "WebUI_to_Recommender",
+      "direction" : "IN"
+    }, {
+      "portRef" : "teastore-auth.teastore_persistence_out",
+      "connectorName" : "teastore-auth_to_teastore-persistence",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "teastore-persistence.in",
+      "connectorName" : "teastore-auth_to_teastore-persistence",
+      "direction" : "IN"
+    }, {
+      "portRef" : "teastore-image.teastore_persistence_out",
+      "connectorName" : "teastore-image_to_teastore-persistence",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "teastore-persistence.in",
+      "connectorName" : "teastore-image_to_teastore-persistence",
+      "direction" : "IN"
+    }, {
+      "portRef" : "teastore-recommender.teastore_persistence_out",
+      "connectorName" : "teastore-recommender_to_teastore-persistence",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "teastore-persistence.in",
+      "connectorName" : "teastore-recommender_to_teastore-persistence",
+      "direction" : "IN"
+    } ],
+    "implementations" : [ {
+      "name" : "registry-build",
+      "runtime" : "container",
+      "image" : "descartesresearch/teastore-registry",
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "db-build",
+      "runtime" : "container",
+      "image" : "descartesresearch/teastore-db",
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "persistence-build",
+      "runtime" : "container",
+      "image" : "descartesresearch/teastore-persistence",
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "auth-build",
+      "runtime" : "container",
+      "image" : "descartesresearch/teastore-auth",
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "image-build",
+      "runtime" : "container",
+      "image" : "descartesresearch/teastore-image",
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "recommender-build",
+      "runtime" : "container",
+      "image" : "descartesresearch/teastore-recommender",
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "webui-build",
+      "runtime" : "container",
+      "image" : "descartesresearch/teastore-webui",
+      "resources" : { },
+      "config" : { }
+    } ]
+  },
+  "security" : {
+    "attributes" : [ {
+      "name" : "Domain",
+      "values" : [ "platform", "catalog", "data", "auth", "frontend" ]
+    }, {
+      "name" : "DataClass",
+      "values" : [ "product" ]
+    } ],
+    "contexts" : [ {
+      "name" : "webuiCtx",
+      "conditions" : [ {
+        "attribute" : "Domain",
+        "value" : "frontend"
+      } ]
+    }, {
+      "name" : "authCtx",
+      "conditions" : [ {
+        "attribute" : "Domain",
+        "value" : "auth"
+      } ]
+    }, {
+      "name" : "persistenceCtx",
+      "conditions" : [ {
+        "attribute" : "Domain",
+        "value" : "data"
+      } ]
+    }, {
+      "name" : "dbCtx",
+      "conditions" : [ {
+        "attribute" : "DataClass",
+        "value" : "product"
+      } ]
+    }, {
+      "name" : "viaData",
+      "conditions" : [ {
+        "attribute" : "Domain",
+        "value" : "data"
+      } ]
+    } ],
+    "rules" : [ {
+      "type" : "Isolation",
+      "sctx" : {
+        "name" : "dbCtx"
+      },
+      "tctx" : {
+        "name" : "webuiCtx"
+      }
+    }, {
+      "type" : "Authentication",
+      "sctx" : {
+        "name" : "webuiCtx"
+      },
+      "actx" : {
+        "name" : "authCtx"
+      },
+      "tctx" : {
+        "name" : "persistenceCtx"
+      }
+    }, {
+      "type" : "Availability",
+      "target" : {
+        "name" : "webuiCtx"
+      },
+      "level" : "medium"
+    } ]
+  },
+  "coverage" : {
+    "webuiCtx" : [ {
+      "name" : "teastore-webui",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "frontend"
+      },
+      "ports" : [ "http_in", "registry_out", "auth_out", "persistence_out", "image_out", "recommender_out" ]
+    } ],
+    "authCtx" : [ {
+      "name" : "teastore-auth",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "auth"
+      },
+      "ports" : [ "registry_out", "webui_in", "teastore_persistence_out" ]
+    } ],
+    "persistenceCtx" : [ {
+      "name" : "teastore-persistence",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "data"
+      },
+      "ports" : [ "registry_out", "db_out", "webui_in", "in" ]
+    } ],
+    "dbCtx" : [ {
+      "name" : "teastore-db",
+      "type" : "Data",
+      "attributes" : {
+        "Domain" : "catalog",
+        "DataClass" : "product"
+      },
+      "ports" : [ "persistence_in" ]
+    } ],
+    "viaData" : [ {
+      "name" : "teastore-persistence",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "data"
+      },
+      "ports" : [ "registry_out", "db_out", "webui_in", "in" ]
+    } ]
+  },
+  "resolvedRules" : [ {
+    "type" : "Isolation",
+    "sctx" : [ {
+      "name" : "teastore-db",
+      "type" : "Data",
+      "attributes" : {
+        "Domain" : "catalog",
+        "DataClass" : "product"
+      },
+      "ports" : [ "persistence_in" ]
+    } ],
+    "tctx" : [ {
+      "name" : "teastore-webui",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "frontend"
+      },
+      "ports" : [ "http_in", "registry_out", "auth_out", "persistence_out", "image_out", "recommender_out" ]
+    } ],
+    "actx" : [ {
+      "name" : "teastore-persistence",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "data"
+      },
+      "ports" : [ "registry_out", "db_out", "webui_in", "in" ]
+    } ]
+  }, {
+    "type" : "Authentication",
+    "sctx" : [ {
+      "name" : "teastore-webui",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "frontend"
+      },
+      "ports" : [ "http_in", "registry_out", "auth_out", "persistence_out", "image_out", "recommender_out" ]
+    } ],
+    "tctx" : [ {
+      "name" : "teastore-persistence",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "data"
+      },
+      "ports" : [ "registry_out", "db_out", "webui_in", "in" ]
+    } ],
+    "actx" : [ {
+      "name" : "teastore-auth",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "auth"
+      },
+      "ports" : [ "registry_out", "webui_in", "teastore_persistence_out" ]
+    } ],
+    "paths" : [ {
+      "connector" : "WebUI_to_Persistence",
+      "sctxLinks" : [ {
+        "port" : "teastore-webui.persistence_out",
+        "direction" : "out"
+      } ],
+      "tctxLinks" : [ {
+        "port" : "teastore-persistence.webui_in",
+        "direction" : "in"
+      } ]
+    } ]
+  }, {
+    "type" : "Availability",
+    "sctx" : [ {
+      "name" : "teastore-webui",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "frontend"
+      },
+      "ports" : [ "http_in", "registry_out", "auth_out", "persistence_out", "image_out", "recommender_out" ]
+    } ]
+  } ]
+}

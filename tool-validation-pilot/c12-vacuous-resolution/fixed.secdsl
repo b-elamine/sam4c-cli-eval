@@ -1,0 +1,4 @@
+#attribute Domain = (service, payment);
+#context svcCtx = (Domain=service);
+#context payCtx = (Domain=payment);
+#property Isolation(svcCtx, payCtx);

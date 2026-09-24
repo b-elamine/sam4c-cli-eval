@@ -1,0 +1,13 @@
+#attribute Domain = (frontend, catalog, cart, orders, payment, shipping, user);
+#attribute DataClass = (session, cart, product, order, account);
+
+#context frontendCtx = (Domain=frontend);
+#context ordersCtx   = (Domain=orders);
+#context paymentCtx  = (Domain=payment);
+#context sessionCtx  = (DataClass=session);
+
+#context viaCart = (Domain=cart);
+#property Isolation(sessionCtx, frontendCtx, viaCart);
+#property Confidentiality(ordersCtx, paymentCtx);
+#property Availability(frontendCtx, medium);
+#property Availability(ordersCtx, medium);

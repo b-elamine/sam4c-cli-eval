@@ -1,0 +1,205 @@
+{
+  "name" : "c8-mediator-vuln",
+  "architecture" : {
+    "name" : "c8-mediator-vuln",
+    "components" : [ {
+      "name" : "Frontend",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "be_out",
+        "number" : 443,
+        "protocol" : "http"
+      }, {
+        "name" : "db_debug_out",
+        "number" : 5432,
+        "protocol" : "tcp"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "frontend"
+      },
+      "properties" : {
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "Backend",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "fe_in",
+        "number" : 443,
+        "protocol" : "http"
+      }, {
+        "name" : "db_out",
+        "number" : 5432,
+        "protocol" : "tcp"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "backend"
+      },
+      "properties" : {
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "DB",
+      "type" : "Data",
+      "ports" : [ {
+        "name" : "be_in",
+        "number" : 5432,
+        "protocol" : "tcp"
+      }, {
+        "name" : "debug_in",
+        "number" : 5433,
+        "protocol" : "tcp"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "database",
+        "DataClass" : "pii"
+      },
+      "properties" : {
+        "persistent" : true,
+        "storage" : "20Gi"
+      }
+    } ],
+    "connectors" : [ {
+      "name" : "FE_to_BE",
+      "external" : false,
+      "protocol" : null
+    }, {
+      "name" : "BE_to_DB",
+      "external" : false,
+      "protocol" : null
+    }, {
+      "name" : "FE_to_DB_debug",
+      "external" : false,
+      "protocol" : null
+    } ],
+    "links" : [ {
+      "portRef" : "Frontend.be_out",
+      "connectorName" : "FE_to_BE",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "Backend.fe_in",
+      "connectorName" : "FE_to_BE",
+      "direction" : "IN"
+    }, {
+      "portRef" : "Backend.db_out",
+      "connectorName" : "BE_to_DB",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "DB.be_in",
+      "connectorName" : "BE_to_DB",
+      "direction" : "IN"
+    }, {
+      "portRef" : "Frontend.db_debug_out",
+      "connectorName" : "FE_to_DB_debug",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "DB.debug_in",
+      "connectorName" : "FE_to_DB_debug",
+      "direction" : "IN"
+    } ],
+    "implementations" : [ ]
+  },
+  "security" : {
+    "attributes" : [ {
+      "name" : "Domain",
+      "values" : [ "frontend", "backend", "database" ]
+    } ],
+    "contexts" : [ {
+      "name" : "frontendCtx",
+      "conditions" : [ {
+        "attribute" : "Domain",
+        "value" : "frontend"
+      } ]
+    }, {
+      "name" : "backendCtx",
+      "conditions" : [ {
+        "attribute" : "Domain",
+        "value" : "backend"
+      } ]
+    }, {
+      "name" : "dbCtx",
+      "conditions" : [ {
+        "attribute" : "Domain",
+        "value" : "database"
+      } ]
+    } ],
+    "rules" : [ {
+      "type" : "Isolation",
+      "sctx" : {
+        "name" : "dbCtx"
+      },
+      "tctx" : {
+        "name" : "frontendCtx"
+      }
+    } ]
+  },
+  "coverage" : {
+    "frontendCtx" : [ {
+      "name" : "Frontend",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "frontend"
+      },
+      "ports" : [ "be_out", "db_debug_out" ]
+    } ],
+    "backendCtx" : [ {
+      "name" : "Backend",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "backend"
+      },
+      "ports" : [ "fe_in", "db_out" ]
+    } ],
+    "dbCtx" : [ {
+      "name" : "DB",
+      "type" : "Data",
+      "attributes" : {
+        "Domain" : "database",
+        "DataClass" : "pii"
+      },
+      "ports" : [ "be_in", "debug_in" ]
+    } ]
+  },
+  "resolvedRules" : [ {
+    "type" : "Isolation",
+    "sctx" : [ {
+      "name" : "DB",
+      "type" : "Data",
+      "attributes" : {
+        "Domain" : "database",
+        "DataClass" : "pii"
+      },
+      "ports" : [ "be_in", "debug_in" ]
+    } ],
+    "tctx" : [ {
+      "name" : "Frontend",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "frontend"
+      },
+      "ports" : [ "be_out", "db_debug_out" ]
+    } ],
+    "actx" : [ {
+      "name" : "Backend",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "backend"
+      },
+      "ports" : [ "fe_in", "db_out" ]
+    } ],
+    "paths" : [ {
+      "connector" : "FE_to_DB_debug",
+      "sctxLinks" : [ {
+        "port" : "DB.debug_in",
+        "direction" : "in"
+      } ],
+      "tctxLinks" : [ {
+        "port" : "Frontend.db_debug_out",
+        "direction" : "out"
+      } ]
+    } ]
+  } ]
+}

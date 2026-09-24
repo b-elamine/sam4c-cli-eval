@@ -1,0 +1,34 @@
+name: c11-cwe923-weakhop-chain-vuln
+components:
+  - name: Frontend
+    type: App
+    attributes: { Domain: frontend }
+    exposure: internal
+    ports:
+      - { name: m_out, protocol: http }
+  - name: Middle
+    type: App
+    attributes: { Domain: middle }
+    exposure: external
+    ports:
+      - { name: fe_in, number: 8080, protocol: http }
+      - { name: db_out, protocol: tcp }
+  - name: DB
+    type: Data
+    attributes: { Domain: database }
+    exposure: internal
+    persistent: true
+    storage: 5Gi
+    ports:
+      - { name: m_in, number: 5432, protocol: tcp }
+
+connectors:
+  - name: FE_to_Mid
+    protocol: http
+  - name: Mid_to_DB
+    protocol: tcp
+links:
+  - { port: Frontend.m_out, connector: FE_to_Mid, direction: out }
+  - { port: Middle.fe_in, connector: FE_to_Mid, direction: in }
+  - { port: Middle.db_out, connector: Mid_to_DB, direction: out }
+  - { port: DB.m_in, connector: Mid_to_DB, direction: in }

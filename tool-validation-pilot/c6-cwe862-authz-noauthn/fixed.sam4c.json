@@ -1,0 +1,183 @@
+{
+  "name" : "c6-authz-fixed",
+  "architecture" : {
+    "name" : "c6-authz-fixed",
+    "components" : [ {
+      "name" : "Admin",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "a",
+        "number" : 8080,
+        "protocol" : "http"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "admin"
+      },
+      "properties" : {
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "IdP",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "token",
+        "number" : 8081,
+        "protocol" : "http"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "auth",
+        "Mechanism" : "oidc"
+      },
+      "properties" : {
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "DB",
+      "type" : "Data",
+      "ports" : [ {
+        "name" : "sql",
+        "number" : 5432,
+        "protocol" : "tcp"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "database"
+      },
+      "properties" : {
+        "persistent" : true,
+        "storage" : "5Gi"
+      }
+    } ],
+    "connectors" : [ {
+      "name" : "c",
+      "external" : false,
+      "protocol" : null
+    } ],
+    "links" : [ ],
+    "implementations" : [ ]
+  },
+  "security" : {
+    "attributes" : [ {
+      "name" : "Domain",
+      "values" : [ "admin", "database", "auth" ]
+    }, {
+      "name" : "Mechanism",
+      "values" : [ "oidc" ]
+    } ],
+    "contexts" : [ {
+      "name" : "adminCtx",
+      "conditions" : [ {
+        "attribute" : "Domain",
+        "value" : "admin"
+      } ]
+    }, {
+      "name" : "dbCtx",
+      "conditions" : [ {
+        "attribute" : "Domain",
+        "value" : "database"
+      } ]
+    }, {
+      "name" : "mechCtx",
+      "conditions" : [ {
+        "attribute" : "Mechanism",
+        "value" : "oidc"
+      } ]
+    } ],
+    "rules" : [ {
+      "type" : "Authentication",
+      "sctx" : {
+        "name" : "adminCtx"
+      },
+      "actx" : {
+        "name" : "mechCtx"
+      },
+      "tctx" : {
+        "name" : "dbCtx"
+      }
+    }, {
+      "type" : "Authorization",
+      "subject" : {
+        "name" : "adminCtx"
+      },
+      "resource" : {
+        "name" : "dbCtx"
+      },
+      "actions" : [ "read", "write" ]
+    } ]
+  },
+  "coverage" : {
+    "adminCtx" : [ {
+      "name" : "Admin",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "admin"
+      },
+      "ports" : [ "a" ]
+    } ],
+    "dbCtx" : [ {
+      "name" : "DB",
+      "type" : "Data",
+      "attributes" : {
+        "Domain" : "database"
+      },
+      "ports" : [ "sql" ]
+    } ],
+    "mechCtx" : [ {
+      "name" : "IdP",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "auth",
+        "Mechanism" : "oidc"
+      },
+      "ports" : [ "token" ]
+    } ]
+  },
+  "resolvedRules" : [ {
+    "type" : "Authentication",
+    "sctx" : [ {
+      "name" : "Admin",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "admin"
+      },
+      "ports" : [ "a" ]
+    } ],
+    "tctx" : [ {
+      "name" : "DB",
+      "type" : "Data",
+      "attributes" : {
+        "Domain" : "database"
+      },
+      "ports" : [ "sql" ]
+    } ],
+    "actx" : [ {
+      "name" : "IdP",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "auth",
+        "Mechanism" : "oidc"
+      },
+      "ports" : [ "token" ]
+    } ]
+  }, {
+    "type" : "Authorization",
+    "sctx" : [ {
+      "name" : "Admin",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "admin"
+      },
+      "ports" : [ "a" ]
+    } ],
+    "tctx" : [ {
+      "name" : "DB",
+      "type" : "Data",
+      "attributes" : {
+        "Domain" : "database"
+      },
+      "ports" : [ "sql" ]
+    } ]
+  } ]
+}

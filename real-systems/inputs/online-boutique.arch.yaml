@@ -1,0 +1,270 @@
+# Modeled from GoogleCloudPlatform/microservices-demo, release/kubernetes-manifests.yaml
+# (main branch, fetched 2026-07-31). Real image refs, real resource requests/limits,
+# real exposure (frontend-external LoadBalancer vs everything else ClusterIP), real
+# env-var-derived call graph. loadgenerator modeled (FRONTEND_ADDR env var); Domain
+# observability. shoppingassistantservice is not modeled: referenced in an env var but
+# has no Deployment/Service in this manifest.
+#
+# Kubernetes abstracts away which physical/virtual node a pod lands on -- the
+# manifest gives no per-service scheduling hints -- so all Deployables are placed on
+# one Worker representing the cluster's node pool, not an invented multi-host split.
+#
+# Full-manifest pass (2026-09-20): every runnable unit of the ground-truth file is now
+# modeled, none excluded. Tooling with host ports (dev UIs) is modeled internal, same
+# exposure judgment as before. Edge sources: loadgenerator -> frontend from its FRONTEND_ADDR env var.
+
+
+name: online-boutique
+
+components:
+  - name: K8sCluster
+    type: Worker
+
+  - name: frontend
+    type: App
+    attributes: { Domain: frontend }
+    exposure: external
+    deployedOn: K8sCluster
+    implementation: frontend-build
+    ports:
+      - { name: http_in, number: 8080, protocol: http }
+      - { name: in, protocol: http }
+      - { name: productcatalog_out, protocol: http }
+      - { name: currency_out, protocol: http }
+      - { name: cart_out, protocol: http }
+      - { name: recommendation_out, protocol: http }
+      - { name: shipping_out, protocol: http }
+      - { name: checkout_out, protocol: http }
+      - { name: ad_out, protocol: http }
+
+  - name: adservice
+    type: App
+    attributes: { Domain: ads }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: adservice-build
+    ports:
+      - { name: fe_in, number: 9555, protocol: grpc }
+
+  - name: currencyservice
+    type: App
+    attributes: { Domain: currency }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: currencyservice-build
+    ports:
+      - { name: fe_in, number: 7000, protocol: grpc }
+      - { name: checkout_in, protocol: grpc }
+
+  - name: cartservice
+    type: App
+    attributes: { Domain: cart }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: cartservice-build
+    ports:
+      - { name: fe_in, number: 7070, protocol: grpc }
+      - { name: checkout_in, protocol: grpc }
+      - { name: redis_out, protocol: tcp }
+
+  - name: redis-cart
+    type: Data
+    attributes: { Domain: cart, DataClass: session }
+    exposure: internal
+    persistent: false
+    deployedOn: K8sCluster
+    implementation: redis-cart-build
+    ports:
+      - { name: cart_in, number: 6379, protocol: tcp }
+
+  - name: recommendationservice
+    type: App
+    attributes: { Domain: recommendation }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: recommendationservice-build
+    ports:
+      - { name: fe_in, number: 8080, protocol: grpc }
+      - { name: productcatalog_out, protocol: grpc }
+
+  - name: checkoutservice
+    type: App
+    attributes: { Domain: checkout }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: checkoutservice-build
+    ports:
+      - { name: fe_in, number: 5050, protocol: grpc }
+      - { name: productcatalog_out, protocol: grpc }
+      - { name: shipping_out, protocol: grpc }
+      - { name: payment_out, protocol: grpc }
+      - { name: email_out, protocol: grpc }
+      - { name: currency_out, protocol: grpc }
+      - { name: cart_out, protocol: grpc }
+
+  - name: emailservice
+    type: App
+    attributes: { Domain: email }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: emailservice-build
+    ports:
+      - { name: checkout_in, number: 8080, protocol: http }
+
+  - name: paymentservice
+    type: App
+    attributes: { Domain: payment }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: paymentservice-build
+    ports:
+      - { name: checkout_in, number: 50051, protocol: grpc }
+
+  - name: shippingservice
+    type: App
+    attributes: { Domain: shipping }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: shippingservice-build
+    ports:
+      - { name: fe_in, number: 50051, protocol: grpc }
+      - { name: checkout_in, protocol: grpc }
+
+  - name: productcatalogservice
+    type: App
+    attributes: { Domain: catalog }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: productcatalogservice-build
+    ports:
+      - { name: fe_in, number: 3550, protocol: grpc }
+      - { name: recommendation_in, protocol: grpc }
+      - { name: checkout_in, protocol: grpc }
+  - name: loadgenerator
+    type: App
+    attributes: { Domain: observability }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: loadgenerator-build
+    ports: [{ name: frontend_out, protocol: http }]
+
+connectors:
+  - name: Internet
+    external: true
+    protocol: http
+  - name: FE_to_Ad
+    protocol: grpc
+  - name: FE_to_Currency
+    protocol: grpc
+  - name: FE_to_Cart
+    protocol: grpc
+  - name: FE_to_Recommendation
+    protocol: grpc
+  - name: FE_to_Shipping
+    protocol: grpc
+  - name: FE_to_Checkout
+    protocol: grpc
+  - name: FE_to_ProductCatalog
+    protocol: grpc
+  - name: Cart_to_Redis
+    protocol: tcp
+  - name: Recommendation_to_ProductCatalog
+    protocol: grpc
+  - name: Checkout_to_ProductCatalog
+    protocol: grpc
+  - name: Checkout_to_Shipping
+    protocol: grpc
+  - name: Checkout_to_Payment
+    protocol: grpc
+  - name: Checkout_to_Email
+    protocol: http
+  - name: Checkout_to_Currency
+    protocol: grpc
+  - name: Checkout_to_Cart
+    protocol: grpc
+  - name: loadgenerator_to_frontend
+    protocol: http
+
+links:
+  - { port: frontend.http_in, connector: Internet, direction: in }
+  - { port: frontend.ad_out, connector: FE_to_Ad, direction: out }
+  - { port: adservice.fe_in, connector: FE_to_Ad, direction: in }
+  - { port: frontend.currency_out, connector: FE_to_Currency, direction: out }
+  - { port: currencyservice.fe_in, connector: FE_to_Currency, direction: in }
+  - { port: frontend.cart_out, connector: FE_to_Cart, direction: out }
+  - { port: cartservice.fe_in, connector: FE_to_Cart, direction: in }
+  - { port: frontend.recommendation_out, connector: FE_to_Recommendation, direction: out }
+  - { port: recommendationservice.fe_in, connector: FE_to_Recommendation, direction: in }
+  - { port: frontend.shipping_out, connector: FE_to_Shipping, direction: out }
+  - { port: shippingservice.fe_in, connector: FE_to_Shipping, direction: in }
+  - { port: frontend.checkout_out, connector: FE_to_Checkout, direction: out }
+  - { port: checkoutservice.fe_in, connector: FE_to_Checkout, direction: in }
+  - { port: frontend.productcatalog_out, connector: FE_to_ProductCatalog, direction: out }
+  - { port: productcatalogservice.fe_in, connector: FE_to_ProductCatalog, direction: in }
+  - { port: cartservice.redis_out, connector: Cart_to_Redis, direction: out }
+  - { port: redis-cart.cart_in, connector: Cart_to_Redis, direction: in }
+  - { port: recommendationservice.productcatalog_out, connector: Recommendation_to_ProductCatalog, direction: out }
+  - { port: productcatalogservice.recommendation_in, connector: Recommendation_to_ProductCatalog, direction: in }
+  - { port: checkoutservice.productcatalog_out, connector: Checkout_to_ProductCatalog, direction: out }
+  - { port: productcatalogservice.checkout_in, connector: Checkout_to_ProductCatalog, direction: in }
+  - { port: checkoutservice.shipping_out, connector: Checkout_to_Shipping, direction: out }
+  - { port: shippingservice.checkout_in, connector: Checkout_to_Shipping, direction: in }
+  - { port: checkoutservice.payment_out, connector: Checkout_to_Payment, direction: out }
+  - { port: paymentservice.checkout_in, connector: Checkout_to_Payment, direction: in }
+  - { port: checkoutservice.email_out, connector: Checkout_to_Email, direction: out }
+  - { port: emailservice.checkout_in, connector: Checkout_to_Email, direction: in }
+  - { port: checkoutservice.currency_out, connector: Checkout_to_Currency, direction: out }
+  - { port: currencyservice.checkout_in, connector: Checkout_to_Currency, direction: in }
+  - { port: checkoutservice.cart_out, connector: Checkout_to_Cart, direction: out }
+  - { port: cartservice.checkout_in, connector: Checkout_to_Cart, direction: in }
+  - { port: loadgenerator.frontend_out, connector: loadgenerator_to_frontend, direction: out }
+  - { port: frontend.in, connector: loadgenerator_to_frontend, direction: in }
+
+implementations:
+  - name: frontend-build
+    runtime: container
+    image: "us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/frontend:v0.10.6"
+    resources: { cpu: "200m", memory: "128Mi" }
+  - name: adservice-build
+    runtime: container
+    image: "us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/adservice:v0.10.6"
+    resources: { cpu: "300m", memory: "300Mi" }
+  - name: currencyservice-build
+    runtime: container
+    image: "us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/currencyservice:v0.10.6"
+    resources: { cpu: "200m", memory: "128Mi" }
+  - name: cartservice-build
+    runtime: container
+    image: "us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/cartservice:v0.10.6"
+    resources: { cpu: "300m", memory: "128Mi" }
+  - name: redis-cart-build
+    runtime: container
+    image: "redis:alpine"
+    resources: { cpu: "125m", memory: "256Mi" }
+  - name: recommendationservice-build
+    runtime: container
+    image: "us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/recommendationservice:v0.10.6"
+    resources: { cpu: "200m", memory: "450Mi" }
+  - name: checkoutservice-build
+    runtime: container
+    image: "us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/checkoutservice:v0.10.6"
+    resources: { cpu: "200m", memory: "128Mi" }
+  - name: emailservice-build
+    runtime: container
+    image: "us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/emailservice:v0.10.6"
+    resources: { cpu: "200m", memory: "128Mi" }
+  - name: paymentservice-build
+    runtime: container
+    image: "us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/paymentservice:v0.10.6"
+    resources: { cpu: "200m", memory: "128Mi" }
+  - name: shippingservice-build
+    runtime: container
+    image: "us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/shippingservice:v0.10.6"
+    resources: { cpu: "200m", memory: "128Mi" }
+  - name: productcatalogservice-build
+    runtime: container
+    image: "us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/productcatalogservice:v0.10.6"
+    resources: { cpu: "200m", memory: "128Mi" }
+  - name: loadgenerator-build
+    runtime: container
+    image: "us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/loadgenerator:v0.10.6"

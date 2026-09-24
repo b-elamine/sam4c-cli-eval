@@ -1,0 +1,125 @@
+{
+  "name" : "c2-iso-fixed",
+  "architecture" : {
+    "name" : "c2-iso-fixed",
+    "components" : [ {
+      "name" : "Frontend",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "web",
+        "number" : 443,
+        "protocol" : "http"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "frontend"
+      },
+      "properties" : {
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "DB",
+      "type" : "Data",
+      "ports" : [ {
+        "name" : "sql",
+        "number" : 5432,
+        "protocol" : "tcp"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "database",
+        "DataClass" : "pii"
+      },
+      "properties" : {
+        "persistent" : true,
+        "storage" : "20Gi"
+      }
+    } ],
+    "connectors" : [ {
+      "name" : "public",
+      "external" : false,
+      "protocol" : null
+    }, {
+      "name" : "dbnet",
+      "external" : false,
+      "protocol" : null
+    } ],
+    "links" : [ {
+      "portRef" : "Frontend.web",
+      "connectorName" : "public",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "DB.sql",
+      "connectorName" : "dbnet",
+      "direction" : "IN"
+    } ],
+    "implementations" : [ ]
+  },
+  "security" : {
+    "attributes" : [ {
+      "name" : "Domain",
+      "values" : [ "frontend", "database" ]
+    } ],
+    "contexts" : [ {
+      "name" : "frontendCtx",
+      "conditions" : [ {
+        "attribute" : "Domain",
+        "value" : "frontend"
+      } ]
+    }, {
+      "name" : "dbCtx",
+      "conditions" : [ {
+        "attribute" : "Domain",
+        "value" : "database"
+      } ]
+    } ],
+    "rules" : [ {
+      "type" : "Isolation",
+      "sctx" : {
+        "name" : "dbCtx"
+      },
+      "tctx" : {
+        "name" : "frontendCtx"
+      }
+    } ]
+  },
+  "coverage" : {
+    "frontendCtx" : [ {
+      "name" : "Frontend",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "frontend"
+      },
+      "ports" : [ "web" ]
+    } ],
+    "dbCtx" : [ {
+      "name" : "DB",
+      "type" : "Data",
+      "attributes" : {
+        "Domain" : "database",
+        "DataClass" : "pii"
+      },
+      "ports" : [ "sql" ]
+    } ]
+  },
+  "resolvedRules" : [ {
+    "type" : "Isolation",
+    "sctx" : [ {
+      "name" : "DB",
+      "type" : "Data",
+      "attributes" : {
+        "Domain" : "database",
+        "DataClass" : "pii"
+      },
+      "ports" : [ "sql" ]
+    } ],
+    "tctx" : [ {
+      "name" : "Frontend",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "frontend"
+      },
+      "ports" : [ "web" ]
+    } ]
+  } ]
+}

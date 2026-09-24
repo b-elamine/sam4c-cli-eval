@@ -1,0 +1,295 @@
+# Modeled from microservices-demo/microservices-demo, deploy/kubernetes/complete-demo.yaml
+# (master branch, fetched 2026-07-31). Real images, resources, exposure (front-end
+# is the only NodePort service, 13 others ClusterIP).
+#
+# Two provenance tiers: front-end -> session-db is explicit (SESSION_REDIS=true env
+# var), user -> user-db is explicit (mongo=user-db:27017 env var). All other edges
+# are role-implied from the standard, widely-documented Sock Shop architecture
+# (front-end fronts catalogue/carts/orders/user; orders drives payment/shipping/
+# queue-master; each service owns its adjacent -db) -- not verified against an
+# explicit call-graph diagram, flagged here rather than presented with the same
+# confidence as the two explicit edges. zipkin/jaeger tracing sidecar referenced by
+# shipping's env var excluded -- observability infrastructure, not a business
+# dependency, out of scope same as loadgenerator elsewhere in this study.
+#
+# persistent = the data volume outlives the pod/container (PVC, volumeClaimTemplate,
+# hostPath, or a named compose volume). emptyDir, no volume, or an init-script-only bind
+# mount count as not persistent. Corrected 2026-09-20 against the repo manifests.
+
+name: sock-shop
+
+components:
+  - name: K8sCluster
+    type: Worker
+
+  - name: front-end
+    type: App
+    attributes: { Domain: frontend }
+    exposure: external
+    deployedOn: K8sCluster
+    implementation: front-end-build
+    ports:
+      - { name: http_in, number: 8079, protocol: http }
+      - { name: catalogue_out, protocol: http }
+      - { name: carts_out, protocol: http }
+      - { name: orders_out, protocol: http }
+      - { name: user_out, protocol: http }
+      - { name: session_out, protocol: tcp }
+
+  - name: catalogue
+    type: App
+    attributes: { Domain: catalog }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: catalogue-build
+    ports:
+      - { name: fe_in, number: 80, protocol: http }
+      - { name: db_out, protocol: tcp }
+
+  - name: catalogue-db
+    type: Data
+    attributes: { Domain: catalog, DataClass: product }
+    exposure: internal
+    persistent: false
+    storage: unspecified
+    deployedOn: K8sCluster
+    implementation: catalogue-db-build
+    ports:
+      - { name: catalogue_in, number: 3306, protocol: tcp }
+
+  - name: carts
+    type: App
+    attributes: { Domain: cart }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: carts-build
+    ports:
+      - { name: fe_in, number: 80, protocol: http }
+      - { name: db_out, protocol: tcp }
+      - { name: in, protocol: http }
+
+  - name: carts-db
+    type: Data
+    attributes: { Domain: cart, DataClass: cart }
+    exposure: internal
+    persistent: false
+    storage: unspecified
+    deployedOn: K8sCluster
+    implementation: carts-db-build
+    ports:
+      - { name: carts_in, number: 27017, protocol: tcp }
+
+  - name: orders
+    type: App
+    attributes: { Domain: orders }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: orders-build
+    ports:
+      - { name: fe_in, number: 80, protocol: http }
+      - { name: db_out, protocol: tcp }
+      - { name: payment_out, protocol: http }
+      - { name: shipping_out, protocol: http }
+      - { name: carts_out, protocol: http }
+      - { name: user_out, protocol: http }
+
+  - name: orders-db
+    type: Data
+    attributes: { Domain: orders, DataClass: order }
+    exposure: internal
+    persistent: false
+    storage: unspecified
+    deployedOn: K8sCluster
+    implementation: orders-db-build
+    ports:
+      - { name: orders_in, number: 27017, protocol: tcp }
+
+  - name: payment
+    type: App
+    attributes: { Domain: payment }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: payment-build
+    ports:
+      - { name: orders_in, number: 80, protocol: http }
+
+  - name: shipping
+    type: App
+    attributes: { Domain: shipping }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: shipping-build
+    ports:
+      - { name: orders_in, number: 80, protocol: http }
+      - { name: rabbitmq_out, protocol: tcp }
+
+  - name: queue-master
+    type: App
+    attributes: { Domain: orders }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: queue-master-build
+    ports:
+      - { name: rabbitmq_out, protocol: tcp }
+
+  - name: rabbitmq
+    type: App
+    attributes: { Domain: orders }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: rabbitmq-build
+    ports:
+      - { name: queue_in, number: 5672, protocol: tcp }
+      - { name: in, protocol: tcp }
+
+  - name: session-db
+    type: Data
+    attributes: { Domain: cart, DataClass: session }
+    exposure: internal
+    persistent: false
+    deployedOn: K8sCluster
+    implementation: session-db-build
+    ports:
+      - { name: fe_in, number: 6379, protocol: tcp }
+
+  - name: user
+    type: App
+    attributes: { Domain: user }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: user-build
+    ports:
+      - { name: fe_in, number: 80, protocol: http }
+      - { name: db_out, protocol: tcp }
+      - { name: in, protocol: http }
+
+  - name: user-db
+    type: Data
+    attributes: { Domain: user, DataClass: account }
+    exposure: internal
+    persistent: false
+    storage: unspecified
+    deployedOn: K8sCluster
+    implementation: user-db-build
+    ports:
+      - { name: user_in, number: 27017, protocol: tcp }
+
+connectors:
+  - name: Internet
+    external: true
+    protocol: http
+  - name: FE_to_Catalogue
+    protocol: http
+  - name: FE_to_Carts
+    protocol: http
+  - name: FE_to_Orders
+    protocol: http
+  - name: FE_to_User
+    protocol: http
+  - name: FE_to_Session
+    protocol: tcp
+  - name: Catalogue_to_DB
+    protocol: tcp
+  - name: Carts_to_DB
+    protocol: tcp
+  - name: Orders_to_DB
+    protocol: tcp
+  - name: Orders_to_Payment
+    protocol: http
+  - name: Orders_to_Shipping
+    protocol: http
+  - name: Queue_to_Rabbitmq
+    protocol: tcp
+  - name: User_to_DB
+    protocol: tcp
+  - name: shipping_to_rabbitmq
+    protocol: tcp
+  - name: orders_to_carts
+    protocol: http
+  - name: orders_to_user
+    protocol: http
+
+links:
+  - { port: front-end.http_in, connector: Internet, direction: in }
+  - { port: front-end.catalogue_out, connector: FE_to_Catalogue, direction: out }
+  - { port: catalogue.fe_in, connector: FE_to_Catalogue, direction: in }
+  - { port: front-end.carts_out, connector: FE_to_Carts, direction: out }
+  - { port: carts.fe_in, connector: FE_to_Carts, direction: in }
+  - { port: front-end.orders_out, connector: FE_to_Orders, direction: out }
+  - { port: orders.fe_in, connector: FE_to_Orders, direction: in }
+  - { port: front-end.user_out, connector: FE_to_User, direction: out }
+  - { port: user.fe_in, connector: FE_to_User, direction: in }
+  - { port: front-end.session_out, connector: FE_to_Session, direction: out }
+  - { port: session-db.fe_in, connector: FE_to_Session, direction: in }
+  - { port: catalogue.db_out, connector: Catalogue_to_DB, direction: out }
+  - { port: catalogue-db.catalogue_in, connector: Catalogue_to_DB, direction: in }
+  - { port: carts.db_out, connector: Carts_to_DB, direction: out }
+  - { port: carts-db.carts_in, connector: Carts_to_DB, direction: in }
+  - { port: orders.db_out, connector: Orders_to_DB, direction: out }
+  - { port: orders-db.orders_in, connector: Orders_to_DB, direction: in }
+  - { port: orders.payment_out, connector: Orders_to_Payment, direction: out }
+  - { port: payment.orders_in, connector: Orders_to_Payment, direction: in }
+  - { port: orders.shipping_out, connector: Orders_to_Shipping, direction: out }
+  - { port: shipping.orders_in, connector: Orders_to_Shipping, direction: in }
+  - { port: queue-master.rabbitmq_out, connector: Queue_to_Rabbitmq, direction: out }
+  - { port: rabbitmq.queue_in, connector: Queue_to_Rabbitmq, direction: in }
+  - { port: user.db_out, connector: User_to_DB, direction: out }
+  - { port: user-db.user_in, connector: User_to_DB, direction: in }
+  - { port: shipping.rabbitmq_out, connector: shipping_to_rabbitmq, direction: out }
+  - { port: rabbitmq.in, connector: shipping_to_rabbitmq, direction: in }
+  - { port: orders.carts_out, connector: orders_to_carts, direction: out }
+  - { port: carts.in, connector: orders_to_carts, direction: in }
+  - { port: orders.user_out, connector: orders_to_user, direction: out }
+  - { port: user.in, connector: orders_to_user, direction: in }
+
+implementations:
+  - name: front-end-build
+    runtime: container
+    image: "weaveworksdemos/front-end:0.3.12"
+    resources: { cpu: "300m", memory: "1000Mi" }
+  - name: catalogue-build
+    runtime: container
+    image: "weaveworksdemos/catalogue:0.3.5"
+    resources: { cpu: "200m", memory: "200Mi" }
+  - name: catalogue-db-build
+    runtime: container
+    image: "weaveworksdemos/catalogue-db:0.3.0"
+  - name: carts-build
+    runtime: container
+    image: "weaveworksdemos/carts:0.4.8"
+    resources: { cpu: "300m", memory: "500Mi" }
+  - name: carts-db-build
+    runtime: container
+    image: "mongo"
+  - name: orders-build
+    runtime: container
+    image: "weaveworksdemos/orders:0.4.7"
+    resources: { cpu: "500m", memory: "500Mi" }
+  - name: orders-db-build
+    runtime: container
+    image: "mongo"
+  - name: payment-build
+    runtime: container
+    image: "weaveworksdemos/payment:0.4.3"
+    resources: { cpu: "200m", memory: "200Mi" }
+  - name: shipping-build
+    runtime: container
+    image: "weaveworksdemos/shipping:0.4.8"
+    resources: { cpu: "300m", memory: "500Mi" }
+  - name: queue-master-build
+    runtime: container
+    image: "weaveworksdemos/queue-master:0.3.1"
+    resources: { cpu: "300m", memory: "500Mi" }
+  - name: rabbitmq-build
+    runtime: container
+    image: "rabbitmq:3.6.8-management"
+  - name: session-db-build
+    runtime: container
+    image: "redis:alpine"
+  - name: user-build
+    runtime: container
+    image: "weaveworksdemos/user:0.4.7"
+    resources: { cpu: "300m", memory: "200Mi" }
+  - name: user-db-build
+    runtime: container
+    image: "weaveworksdemos/user-db:0.3.0"

@@ -1,0 +1,24 @@
+name: c6-authz-fixed
+components:
+  - name: Admin
+    type: App
+    attributes: { Domain: admin }
+    exposure: internal
+    ports:
+      - { name: a, number: 8080, protocol: http }
+  - name: IdP
+    type: App
+    attributes: { Domain: auth, Mechanism: oidc }
+    exposure: internal
+    ports:
+      - { name: token, number: 8081, protocol: http }
+  - name: DB
+    type: Data
+    attributes: { Domain: database }
+    persistent: true
+    storage: 5Gi
+    ports:
+      - { name: sql, number: 5432, protocol: tcp }
+connectors:
+  - name: c
+links: []

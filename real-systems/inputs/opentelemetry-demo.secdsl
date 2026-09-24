@@ -1,0 +1,13 @@
+#attribute Domain = (frontend, ads, cart, checkout, currency, email, payment, catalog, shipping, observability);
+#attribute DataClass = (session, product);
+
+#context proxyCtx    = (Domain=frontend);
+#context checkoutCtx = (Domain=checkout);
+#context paymentCtx  = (Domain=payment);
+#context cartDataCtx = (DataClass=session);
+
+#context viaCart = (Domain=cart);
+#property Isolation(cartDataCtx, proxyCtx, viaCart);
+#property Confidentiality(checkoutCtx, paymentCtx);
+#property Availability(proxyCtx, medium);
+#property Availability(checkoutCtx, medium);

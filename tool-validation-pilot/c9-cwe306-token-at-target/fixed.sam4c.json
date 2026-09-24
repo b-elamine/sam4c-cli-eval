@@ -1,0 +1,186 @@
+{
+  "name" : "c9-cwe306-token-at-target-fixed",
+  "architecture" : {
+    "name" : "c9-cwe306-token-at-target-fixed",
+    "components" : [ {
+      "name" : "Frontend",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "a_out",
+        "number" : null,
+        "protocol" : "http"
+      }, {
+        "name" : "b_out",
+        "number" : null,
+        "protocol" : "http"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "frontend"
+      },
+      "properties" : {
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "Auth",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "in",
+        "number" : 8080,
+        "protocol" : "http"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "auth"
+      },
+      "properties" : {
+        "exposure" : "internal",
+        "credentials" : [ "jwt-key" ]
+      }
+    }, {
+      "name" : "API",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "in",
+        "number" : 8081,
+        "protocol" : "http"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "api"
+      },
+      "properties" : {
+        "exposure" : "internal",
+        "credentials" : [ "jwt-key" ]
+      }
+    } ],
+    "connectors" : [ {
+      "name" : "FE_to_Auth",
+      "external" : false,
+      "protocol" : "http"
+    }, {
+      "name" : "FE_to_API",
+      "external" : false,
+      "protocol" : "http"
+    } ],
+    "links" : [ {
+      "portRef" : "Frontend.a_out",
+      "connectorName" : "FE_to_Auth",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "Auth.in",
+      "connectorName" : "FE_to_Auth",
+      "direction" : "IN"
+    }, {
+      "portRef" : "Frontend.b_out",
+      "connectorName" : "FE_to_API",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "API.in",
+      "connectorName" : "FE_to_API",
+      "direction" : "IN"
+    } ],
+    "implementations" : [ ]
+  },
+  "security" : {
+    "attributes" : [ {
+      "name" : "Domain",
+      "values" : [ "frontend", "auth", "api" ]
+    } ],
+    "contexts" : [ {
+      "name" : "feCtx",
+      "conditions" : [ {
+        "attribute" : "Domain",
+        "value" : "frontend"
+      } ]
+    }, {
+      "name" : "authCtx",
+      "conditions" : [ {
+        "attribute" : "Domain",
+        "value" : "auth"
+      } ]
+    }, {
+      "name" : "apiCtx",
+      "conditions" : [ {
+        "attribute" : "Domain",
+        "value" : "api"
+      } ]
+    } ],
+    "rules" : [ {
+      "type" : "Authentication",
+      "sctx" : {
+        "name" : "feCtx"
+      },
+      "actx" : {
+        "name" : "authCtx"
+      },
+      "tctx" : {
+        "name" : "apiCtx"
+      }
+    } ]
+  },
+  "coverage" : {
+    "feCtx" : [ {
+      "name" : "Frontend",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "frontend"
+      },
+      "ports" : [ "a_out", "b_out" ]
+    } ],
+    "authCtx" : [ {
+      "name" : "Auth",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "auth"
+      },
+      "ports" : [ "in" ]
+    } ],
+    "apiCtx" : [ {
+      "name" : "API",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "api"
+      },
+      "ports" : [ "in" ]
+    } ]
+  },
+  "resolvedRules" : [ {
+    "type" : "Authentication",
+    "sctx" : [ {
+      "name" : "Frontend",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "frontend"
+      },
+      "ports" : [ "a_out", "b_out" ]
+    } ],
+    "tctx" : [ {
+      "name" : "API",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "api"
+      },
+      "ports" : [ "in" ]
+    } ],
+    "actx" : [ {
+      "name" : "Auth",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "auth"
+      },
+      "ports" : [ "in" ]
+    } ],
+    "paths" : [ {
+      "connector" : "FE_to_API",
+      "sctxLinks" : [ {
+        "port" : "Frontend.b_out",
+        "direction" : "out"
+      } ],
+      "tctxLinks" : [ {
+        "port" : "API.in",
+        "direction" : "in"
+      } ]
+    } ]
+  } ]
+}

@@ -1,0 +1,34 @@
+name: c8-mediator-fixed
+# Multi-hop isolation with an approved mediator: DB is reachable from Frontend only through
+# Backend (Frontend->Backend->DB). No direct Frontend<->DB connector exists, so the only
+# path from Frontend to DB passes through the declared mediator -- Isolation(..., via=Backend)
+# holds even though Frontend can transitively reach DB.
+components:
+  - name: Frontend
+    type: App
+    attributes: { Domain: frontend }
+    exposure: internal
+    ports:
+      - { name: be_out, number: 443, protocol: http }
+  - name: Backend
+    type: App
+    attributes: { Domain: backend }
+    exposure: internal
+    ports:
+      - { name: fe_in, number: 443, protocol: http }
+      - { name: db_out, number: 5432, protocol: tcp }
+  - name: DB
+    type: Data
+    attributes: { Domain: database, DataClass: pii }
+    persistent: true
+    storage: 20Gi
+    ports:
+      - { name: be_in, number: 5432, protocol: tcp }
+connectors:
+  - name: FE_to_BE
+  - name: BE_to_DB
+links:
+  - { port: Frontend.be_out, connector: FE_to_BE, direction: out }
+  - { port: Backend.fe_in, connector: FE_to_BE, direction: in }
+  - { port: Backend.db_out, connector: BE_to_DB, direction: out }
+  - { port: DB.be_in, connector: BE_to_DB, direction: in }

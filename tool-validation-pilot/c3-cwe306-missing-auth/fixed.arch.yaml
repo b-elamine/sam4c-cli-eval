@@ -1,0 +1,19 @@
+name: c3-auth-fixed
+# Fix: an authentication mechanism guards the admin API before access.
+components:
+  - name: AdminAPI
+    type: App
+    attributes: { Domain: admin }
+    exposure: external
+    ports:
+      - { name: api, number: 8443, protocol: http }
+  - name: IdP
+    type: App
+    attributes: { Domain: auth, Mechanism: oidc }
+    exposure: internal
+    ports:
+      - { name: token, number: 8080, protocol: http }
+connectors:
+  - name: internet
+links:
+  - { port: AdminAPI.api, connector: internet, direction: in }

@@ -1,0 +1,11 @@
+#attribute Domain = (frontend, post, media, timeline, social, account, observability);
+#attribute DataClass = (account);
+
+#context frontendCtx = (Domain=frontend);
+#context postCtx     = (Domain=post);
+#context accountDbCtx = (DataClass=account);
+
+#context viaAccount = (Domain=account);
+#property Isolation(accountDbCtx, frontendCtx, viaAccount);
+#property Availability(frontendCtx, medium);
+#property Availability(postCtx, medium);

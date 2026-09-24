@@ -1,0 +1,128 @@
+{
+  "name" : "c10-fixed",
+  "architecture" : {
+    "name" : "c10-fixed",
+    "components" : [ {
+      "name" : "Checkout",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "out",
+        "number" : null,
+        "protocol" : "https"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "checkout"
+      },
+      "properties" : {
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "Payment",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "in",
+        "number" : 8443,
+        "protocol" : "https"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "payment"
+      },
+      "properties" : {
+        "exposure" : "internal"
+      }
+    } ],
+    "connectors" : [ {
+      "name" : "Checkout_to_Payment",
+      "external" : false,
+      "protocol" : "https"
+    } ],
+    "links" : [ {
+      "portRef" : "Checkout.out",
+      "connectorName" : "Checkout_to_Payment",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "Payment.in",
+      "connectorName" : "Checkout_to_Payment",
+      "direction" : "IN"
+    } ],
+    "implementations" : [ ]
+  },
+  "security" : {
+    "attributes" : [ {
+      "name" : "Domain",
+      "values" : [ "checkout", "payment" ]
+    } ],
+    "contexts" : [ {
+      "name" : "checkoutCtx",
+      "conditions" : [ {
+        "attribute" : "Domain",
+        "value" : "checkout"
+      } ]
+    }, {
+      "name" : "paymentCtx",
+      "conditions" : [ {
+        "attribute" : "Domain",
+        "value" : "payment"
+      } ]
+    } ],
+    "rules" : [ {
+      "type" : "Confidentiality",
+      "sctx" : {
+        "name" : "checkoutCtx"
+      },
+      "tctx" : {
+        "name" : "paymentCtx"
+      }
+    } ]
+  },
+  "coverage" : {
+    "checkoutCtx" : [ {
+      "name" : "Checkout",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "checkout"
+      },
+      "ports" : [ "out" ]
+    } ],
+    "paymentCtx" : [ {
+      "name" : "Payment",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "payment"
+      },
+      "ports" : [ "in" ]
+    } ]
+  },
+  "resolvedRules" : [ {
+    "type" : "Confidentiality",
+    "sctx" : [ {
+      "name" : "Checkout",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "checkout"
+      },
+      "ports" : [ "out" ]
+    } ],
+    "tctx" : [ {
+      "name" : "Payment",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "payment"
+      },
+      "ports" : [ "in" ]
+    } ],
+    "paths" : [ {
+      "connector" : "Checkout_to_Payment",
+      "sctxLinks" : [ {
+        "port" : "Checkout.out",
+        "direction" : "out"
+      } ],
+      "tctxLinks" : [ {
+        "port" : "Payment.in",
+        "direction" : "in"
+      } ]
+    } ]
+  } ]
+}

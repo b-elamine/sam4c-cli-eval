@@ -1,0 +1,4 @@
+#attribute Domain = (checkout, payment);
+#context checkoutCtx = (Domain=checkout);
+#context paymentCtx = (Domain=payment);
+#property Confidentiality(checkoutCtx, paymentCtx);

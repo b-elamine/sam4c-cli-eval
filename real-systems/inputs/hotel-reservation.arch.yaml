@@ -1,0 +1,523 @@
+# Modeled from delimitrou/DeathStarBench, hotelReservation/docker-compose.yml
+# (master branch, fetched 2026-07-31). Real images, real exposure (frontend is the
+# only service with a host port, 5000; consul exposes its own management ports but
+# isn't a business entry point). Real per-service backing stores confirmed from
+# compose (each of profile/geo/rate/review/attractions/recommendation/user/
+# reservation has its own dedicated mongodb, some also a dedicated memcached).
+#
+# docker-compose's depends_on here is mostly startup ordering + consul service
+# discovery, not the full business call graph. The business edges below (frontend
+# -> search/profile/recommendation/user/reservation; search -> geo/rate) follow
+# DeathStarBench's own documented architecture (Gan et al., ASPLOS'19, and the
+# project's README), a well-known, standard benchmark layout -- not independently
+# re-verified against a call trace, flagged the same way as TeaStore/Sock Shop's
+# role-implied edges.
+#
+# Full-manifest pass (2026-09-20): every runnable unit of the ground-truth file is now
+# modeled, none excluded. Tooling with host ports (dev UIs) is modeled internal, same
+# exposure judgment as before. Edge sources: frontend -> attractions and frontend -> review verified in
+# services/frontend/server.go (7 gRPC clients); every service -> jaeger from config.json
+# (jaegerAddress jaeger:6831, udp); cache and DB edges from compose depends_on and
+# config.json (memcached-profile/rate/reserve/review, mongodb-attractions/review).
+
+
+name: hotel-reservation
+
+components:
+  - name: K8sCluster
+    type: Worker
+
+  - name: consul
+    type: App
+    attributes: { Domain: platform }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: consul-build
+    ports: [{ name: registry_in, protocol: tcp }, { name: in, protocol: http }]
+
+  - name: frontend
+    type: App
+    attributes: { Domain: frontend }
+    exposure: external
+    deployedOn: K8sCluster
+    implementation: frontend-build
+    ports:
+      - { name: http_in, number: 5000, protocol: http }
+      - { name: search_out, protocol: grpc }
+      - { name: profile_out, protocol: grpc }
+      - { name: recommendation_out, protocol: grpc }
+      - { name: user_out, protocol: grpc }
+      - { name: reservation_out, protocol: grpc }
+      - { name: attractions_out, protocol: grpc }
+      - { name: review_out, protocol: grpc }
+      - { name: jaeger_out, protocol: udp }
+      - { name: consul_out, protocol: http }
+
+  - name: search
+    type: App
+    attributes: { Domain: search }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: search-build
+    ports:
+      - { name: fe_in, protocol: grpc }
+      - { name: geo_out, protocol: grpc }
+      - { name: rate_out, protocol: grpc }
+      - { name: jaeger_out, protocol: udp }
+      - { name: consul_out, protocol: http }
+
+  - name: geo
+    type: App
+    attributes: { Domain: search }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: geo-build
+    ports:
+      - { name: search_in, protocol: grpc }
+      - { name: db_out, protocol: tcp }
+      - { name: jaeger_out, protocol: udp }
+      - { name: consul_out, protocol: http }
+
+  - name: mongodb-geo
+    type: Data
+    attributes: { Domain: search, DataClass: geo }
+    exposure: internal
+    persistent: true
+    storage: unspecified
+    deployedOn: K8sCluster
+    implementation: mongodb-geo-build
+    ports: [{ name: geo_in, number: 27017, protocol: tcp }]
+
+  - name: rate
+    type: App
+    attributes: { Domain: search }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: rate-build
+    ports:
+      - { name: search_in, protocol: grpc }
+      - { name: db_out, protocol: tcp }
+      - { name: memcached_rate_out, protocol: tcp }
+      - { name: jaeger_out, protocol: udp }
+      - { name: consul_out, protocol: http }
+
+  - name: mongodb-rate
+    type: Data
+    attributes: { Domain: search, DataClass: rate }
+    exposure: internal
+    persistent: true
+    storage: unspecified
+    deployedOn: K8sCluster
+    implementation: mongodb-rate-build
+    ports: [{ name: rate_in, number: 27017, protocol: tcp }]
+
+  - name: profile
+    type: App
+    attributes: { Domain: profile }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: profile-build
+    ports:
+      - { name: fe_in, protocol: grpc }
+      - { name: db_out, protocol: tcp }
+      - { name: memcached_profile_out, protocol: tcp }
+      - { name: jaeger_out, protocol: udp }
+      - { name: consul_out, protocol: http }
+
+  - name: mongodb-profile
+    type: Data
+    attributes: { Domain: profile, DataClass: profile }
+    exposure: internal
+    persistent: true
+    storage: unspecified
+    deployedOn: K8sCluster
+    implementation: mongodb-profile-build
+    ports: [{ name: profile_in, number: 27017, protocol: tcp }]
+
+  - name: recommendation
+    type: App
+    attributes: { Domain: recommendation }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: recommendation-build
+    ports:
+      - { name: fe_in, protocol: grpc }
+      - { name: db_out, protocol: tcp }
+      - { name: jaeger_out, protocol: udp }
+      - { name: consul_out, protocol: http }
+
+  - name: mongodb-recommendation
+    type: Data
+    attributes: { Domain: recommendation, DataClass: recommendation }
+    exposure: internal
+    persistent: true
+    storage: unspecified
+    deployedOn: K8sCluster
+    implementation: mongodb-recommendation-build
+    ports: [{ name: recommendation_in, number: 27017, protocol: tcp }]
+
+  - name: user
+    type: App
+    attributes: { Domain: account }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: user-build
+    ports:
+      - { name: fe_in, protocol: grpc }
+      - { name: db_out, protocol: tcp }
+      - { name: jaeger_out, protocol: udp }
+      - { name: consul_out, protocol: http }
+
+  - name: mongodb-user
+    type: Data
+    attributes: { Domain: account, DataClass: account }
+    exposure: internal
+    persistent: true
+    storage: unspecified
+    deployedOn: K8sCluster
+    implementation: mongodb-user-build
+    ports: [{ name: user_in, number: 27017, protocol: tcp }]
+
+  - name: reservation
+    type: App
+    attributes: { Domain: reservation }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: reservation-build
+    ports:
+      - { name: fe_in, protocol: grpc }
+      - { name: db_out, protocol: tcp }
+      - { name: memcached_reserve_out, protocol: tcp }
+      - { name: jaeger_out, protocol: udp }
+      - { name: consul_out, protocol: http }
+
+  - name: mongodb-reservation
+    type: Data
+    attributes: { Domain: reservation, DataClass: reservation }
+    exposure: internal
+    persistent: true
+    storage: unspecified
+    deployedOn: K8sCluster
+    implementation: mongodb-reservation-build
+    ports: [{ name: reservation_in, number: 27017, protocol: tcp }]
+  - name: attractions
+    type: App
+    attributes: { Domain: attractions }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: attractions-build
+    ports: [{ name: in, number: 8089, protocol: grpc }, { name: mongodb_attractions_out, protocol: tcp }, { name: jaeger_out, protocol: udp }, { name: consul_out, protocol: http }]
+  - name: review
+    type: App
+    attributes: { Domain: review }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: review-build
+    ports: [{ name: in, number: 8081, protocol: grpc }, { name: mongodb_review_out, protocol: tcp }, { name: memcached_review_out, protocol: tcp }, { name: jaeger_out, protocol: udp }, { name: consul_out, protocol: http }]
+  - name: mongodb-attractions
+    type: Data
+    attributes: { Domain: attractions }
+    exposure: internal
+    persistent: true
+    storage: unspecified
+    deployedOn: K8sCluster
+    implementation: mongodb-attractions-build
+    ports: [{ name: in, number: 27017, protocol: tcp }]
+  - name: mongodb-review
+    type: Data
+    attributes: { Domain: review }
+    exposure: internal
+    persistent: true
+    storage: unspecified
+    deployedOn: K8sCluster
+    implementation: mongodb-review-build
+    ports: [{ name: in, number: 27017, protocol: tcp }]
+  - name: memcached-profile
+    type: Data
+    attributes: { Domain: profile }
+    exposure: internal
+    persistent: false
+    storage: unspecified
+    deployedOn: K8sCluster
+    implementation: memcached-profile-build
+    ports: [{ name: in, number: 11211, protocol: tcp }]
+  - name: memcached-rate
+    type: Data
+    attributes: { Domain: search }
+    exposure: internal
+    persistent: false
+    storage: unspecified
+    deployedOn: K8sCluster
+    implementation: memcached-rate-build
+    ports: [{ name: in, number: 11211, protocol: tcp }]
+  - name: memcached-reserve
+    type: Data
+    attributes: { Domain: reservation }
+    exposure: internal
+    persistent: false
+    storage: unspecified
+    deployedOn: K8sCluster
+    implementation: memcached-reserve-build
+    ports: [{ name: in, number: 11211, protocol: tcp }]
+  - name: memcached-review
+    type: Data
+    attributes: { Domain: review }
+    exposure: internal
+    persistent: false
+    storage: unspecified
+    deployedOn: K8sCluster
+    implementation: memcached-review-build
+    ports: [{ name: in, number: 11211, protocol: tcp }]
+  - name: jaeger
+    type: App
+    attributes: { Domain: observability }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: jaeger-build
+    ports: [{ name: in, number: 6831, protocol: udp }]
+
+connectors:
+  - name: Internet
+    external: true
+    protocol: http
+  - name: FE_to_Search
+    protocol: grpc
+  - name: FE_to_Profile
+    protocol: grpc
+  - name: FE_to_Recommendation
+    protocol: grpc
+  - name: FE_to_User
+    protocol: grpc
+  - name: FE_to_Reservation
+    protocol: grpc
+  - name: Search_to_Geo
+    protocol: grpc
+  - name: Search_to_Rate
+    protocol: grpc
+  - name: Geo_to_DB
+    protocol: tcp
+  - name: Rate_to_DB
+    protocol: tcp
+  - name: Profile_to_DB
+    protocol: tcp
+  - name: Recommendation_to_DB
+    protocol: tcp
+  - name: User_to_DB
+    protocol: tcp
+  - name: Reservation_to_DB
+    protocol: tcp
+  - name: frontend_to_attractions
+    protocol: grpc
+  - name: frontend_to_review
+    protocol: grpc
+  - name: attractions_to_mongodb-attractions
+    protocol: tcp
+  - name: review_to_mongodb-review
+    protocol: tcp
+  - name: review_to_memcached-review
+    protocol: tcp
+  - name: profile_to_memcached-profile
+    protocol: tcp
+  - name: rate_to_memcached-rate
+    protocol: tcp
+  - name: reservation_to_memcached-reserve
+    protocol: tcp
+  - name: frontend_to_jaeger
+    protocol: udp
+  - name: search_to_jaeger
+    protocol: udp
+  - name: geo_to_jaeger
+    protocol: udp
+  - name: rate_to_jaeger
+    protocol: udp
+  - name: profile_to_jaeger
+    protocol: udp
+  - name: recommendation_to_jaeger
+    protocol: udp
+  - name: user_to_jaeger
+    protocol: udp
+  - name: reservation_to_jaeger
+    protocol: udp
+  - name: attractions_to_jaeger
+    protocol: udp
+  - name: review_to_jaeger
+    protocol: udp
+  - name: frontend_to_consul
+    protocol: http
+  - name: search_to_consul
+    protocol: http
+  - name: geo_to_consul
+    protocol: http
+  - name: rate_to_consul
+    protocol: http
+  - name: profile_to_consul
+    protocol: http
+  - name: recommendation_to_consul
+    protocol: http
+  - name: user_to_consul
+    protocol: http
+  - name: reservation_to_consul
+    protocol: http
+  - name: attractions_to_consul
+    protocol: http
+  - name: review_to_consul
+    protocol: http
+
+links:
+  - { port: frontend.http_in, connector: Internet, direction: in }
+  - { port: frontend.search_out, connector: FE_to_Search, direction: out }
+  - { port: search.fe_in, connector: FE_to_Search, direction: in }
+  - { port: frontend.profile_out, connector: FE_to_Profile, direction: out }
+  - { port: profile.fe_in, connector: FE_to_Profile, direction: in }
+  - { port: frontend.recommendation_out, connector: FE_to_Recommendation, direction: out }
+  - { port: recommendation.fe_in, connector: FE_to_Recommendation, direction: in }
+  - { port: frontend.user_out, connector: FE_to_User, direction: out }
+  - { port: user.fe_in, connector: FE_to_User, direction: in }
+  - { port: frontend.reservation_out, connector: FE_to_Reservation, direction: out }
+  - { port: reservation.fe_in, connector: FE_to_Reservation, direction: in }
+  - { port: search.geo_out, connector: Search_to_Geo, direction: out }
+  - { port: geo.search_in, connector: Search_to_Geo, direction: in }
+  - { port: search.rate_out, connector: Search_to_Rate, direction: out }
+  - { port: rate.search_in, connector: Search_to_Rate, direction: in }
+  - { port: geo.db_out, connector: Geo_to_DB, direction: out }
+  - { port: mongodb-geo.geo_in, connector: Geo_to_DB, direction: in }
+  - { port: rate.db_out, connector: Rate_to_DB, direction: out }
+  - { port: mongodb-rate.rate_in, connector: Rate_to_DB, direction: in }
+  - { port: profile.db_out, connector: Profile_to_DB, direction: out }
+  - { port: mongodb-profile.profile_in, connector: Profile_to_DB, direction: in }
+  - { port: recommendation.db_out, connector: Recommendation_to_DB, direction: out }
+  - { port: mongodb-recommendation.recommendation_in, connector: Recommendation_to_DB, direction: in }
+  - { port: user.db_out, connector: User_to_DB, direction: out }
+  - { port: mongodb-user.user_in, connector: User_to_DB, direction: in }
+  - { port: reservation.db_out, connector: Reservation_to_DB, direction: out }
+  - { port: mongodb-reservation.reservation_in, connector: Reservation_to_DB, direction: in }
+  - { port: frontend.attractions_out, connector: frontend_to_attractions, direction: out }
+  - { port: attractions.in, connector: frontend_to_attractions, direction: in }
+  - { port: frontend.review_out, connector: frontend_to_review, direction: out }
+  - { port: review.in, connector: frontend_to_review, direction: in }
+  - { port: attractions.mongodb_attractions_out, connector: attractions_to_mongodb-attractions, direction: out }
+  - { port: mongodb-attractions.in, connector: attractions_to_mongodb-attractions, direction: in }
+  - { port: review.mongodb_review_out, connector: review_to_mongodb-review, direction: out }
+  - { port: mongodb-review.in, connector: review_to_mongodb-review, direction: in }
+  - { port: review.memcached_review_out, connector: review_to_memcached-review, direction: out }
+  - { port: memcached-review.in, connector: review_to_memcached-review, direction: in }
+  - { port: profile.memcached_profile_out, connector: profile_to_memcached-profile, direction: out }
+  - { port: memcached-profile.in, connector: profile_to_memcached-profile, direction: in }
+  - { port: rate.memcached_rate_out, connector: rate_to_memcached-rate, direction: out }
+  - { port: memcached-rate.in, connector: rate_to_memcached-rate, direction: in }
+  - { port: reservation.memcached_reserve_out, connector: reservation_to_memcached-reserve, direction: out }
+  - { port: memcached-reserve.in, connector: reservation_to_memcached-reserve, direction: in }
+  - { port: frontend.jaeger_out, connector: frontend_to_jaeger, direction: out }
+  - { port: jaeger.in, connector: frontend_to_jaeger, direction: in }
+  - { port: search.jaeger_out, connector: search_to_jaeger, direction: out }
+  - { port: jaeger.in, connector: search_to_jaeger, direction: in }
+  - { port: geo.jaeger_out, connector: geo_to_jaeger, direction: out }
+  - { port: jaeger.in, connector: geo_to_jaeger, direction: in }
+  - { port: rate.jaeger_out, connector: rate_to_jaeger, direction: out }
+  - { port: jaeger.in, connector: rate_to_jaeger, direction: in }
+  - { port: profile.jaeger_out, connector: profile_to_jaeger, direction: out }
+  - { port: jaeger.in, connector: profile_to_jaeger, direction: in }
+  - { port: recommendation.jaeger_out, connector: recommendation_to_jaeger, direction: out }
+  - { port: jaeger.in, connector: recommendation_to_jaeger, direction: in }
+  - { port: user.jaeger_out, connector: user_to_jaeger, direction: out }
+  - { port: jaeger.in, connector: user_to_jaeger, direction: in }
+  - { port: reservation.jaeger_out, connector: reservation_to_jaeger, direction: out }
+  - { port: jaeger.in, connector: reservation_to_jaeger, direction: in }
+  - { port: attractions.jaeger_out, connector: attractions_to_jaeger, direction: out }
+  - { port: jaeger.in, connector: attractions_to_jaeger, direction: in }
+  - { port: review.jaeger_out, connector: review_to_jaeger, direction: out }
+  - { port: jaeger.in, connector: review_to_jaeger, direction: in }
+  - { port: frontend.consul_out, connector: frontend_to_consul, direction: out }
+  - { port: consul.in, connector: frontend_to_consul, direction: in }
+  - { port: search.consul_out, connector: search_to_consul, direction: out }
+  - { port: consul.in, connector: search_to_consul, direction: in }
+  - { port: geo.consul_out, connector: geo_to_consul, direction: out }
+  - { port: consul.in, connector: geo_to_consul, direction: in }
+  - { port: rate.consul_out, connector: rate_to_consul, direction: out }
+  - { port: consul.in, connector: rate_to_consul, direction: in }
+  - { port: profile.consul_out, connector: profile_to_consul, direction: out }
+  - { port: consul.in, connector: profile_to_consul, direction: in }
+  - { port: recommendation.consul_out, connector: recommendation_to_consul, direction: out }
+  - { port: consul.in, connector: recommendation_to_consul, direction: in }
+  - { port: user.consul_out, connector: user_to_consul, direction: out }
+  - { port: consul.in, connector: user_to_consul, direction: in }
+  - { port: reservation.consul_out, connector: reservation_to_consul, direction: out }
+  - { port: consul.in, connector: reservation_to_consul, direction: in }
+  - { port: attractions.consul_out, connector: attractions_to_consul, direction: out }
+  - { port: consul.in, connector: attractions_to_consul, direction: in }
+  - { port: review.consul_out, connector: review_to_consul, direction: out }
+  - { port: consul.in, connector: review_to_consul, direction: in }
+
+implementations:
+  - name: consul-build
+    runtime: container
+    image: "hashicorp/consul:latest"
+  - name: frontend-build
+    runtime: container
+    image: "deathstarbench/hotel-reservation:latest"
+  - name: search-build
+    runtime: container
+    image: "deathstarbench/hotel-reservation:latest"
+  - name: geo-build
+    runtime: container
+    image: "deathstarbench/hotel-reservation:latest"
+  - name: mongodb-geo-build
+    runtime: container
+    image: "mongo:5.0"
+  - name: rate-build
+    runtime: container
+    image: "deathstarbench/hotel-reservation:latest"
+  - name: mongodb-rate-build
+    runtime: container
+    image: "mongo:5.0"
+  - name: profile-build
+    runtime: container
+    image: "deathstarbench/hotel-reservation:latest"
+  - name: mongodb-profile-build
+    runtime: container
+    image: "mongo:5.0"
+  - name: recommendation-build
+    runtime: container
+    image: "deathstarbench/hotel-reservation:latest"
+  - name: mongodb-recommendation-build
+    runtime: container
+    image: "mongo:5.0"
+  - name: user-build
+    runtime: container
+    image: "deathstarbench/hotel-reservation:latest"
+  - name: mongodb-user-build
+    runtime: container
+    image: "mongo:5.0"
+  - name: reservation-build
+    runtime: container
+    image: "deathstarbench/hotel-reservation:latest"
+  - name: mongodb-reservation-build
+    runtime: container
+    image: "mongo:5.0"
+  - name: attractions-build
+    runtime: container
+    image: "deathstarbench/hotel-reservation:latest"
+  - name: review-build
+    runtime: container
+    image: "deathstarbench/hotel-reservation:latest"
+  - name: mongodb-attractions-build
+    runtime: container
+    image: "mongo:5.0"
+  - name: mongodb-review-build
+    runtime: container
+    image: "mongo:5.0"
+  - name: memcached-profile-build
+    runtime: container
+    image: "memcached:latest"
+  - name: memcached-rate-build
+    runtime: container
+    image: "memcached:latest"
+  - name: memcached-reserve-build
+    runtime: container
+    image: "memcached:latest"
+  - name: memcached-review-build
+    runtime: container
+    image: "memcached"
+  - name: jaeger-build
+    runtime: container
+    image: "jaegertracing/all-in-one:latest"

@@ -1,0 +1,12 @@
+#attribute Domain = (platform, catalog, data, auth, frontend);
+#attribute DataClass = (product);
+
+#context webuiCtx       = (Domain=frontend);
+#context authCtx        = (Domain=auth);
+#context persistenceCtx = (Domain=data);
+#context dbCtx          = (DataClass=product);
+
+#context viaData = (Domain=data);
+#property Isolation(dbCtx, webuiCtx, viaData);
+#property Authentication(webuiCtx, authCtx) -> persistenceCtx;
+#property Availability(webuiCtx, medium);

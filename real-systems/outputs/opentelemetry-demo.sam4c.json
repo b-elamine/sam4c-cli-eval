@@ -1,0 +1,1508 @@
+{
+  "name" : "opentelemetry-demo",
+  "architecture" : {
+    "name" : "opentelemetry-demo",
+    "components" : [ {
+      "name" : "K8sCluster",
+      "type" : "Worker",
+      "ports" : [ ],
+      "members" : [ ],
+      "attributes" : { },
+      "properties" : { }
+    }, {
+      "name" : "frontend-proxy",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "http_in",
+        "number" : null,
+        "protocol" : "http"
+      }, {
+        "name" : "frontend_out",
+        "number" : null,
+        "protocol" : "http"
+      }, {
+        "name" : "flagd_ui_out",
+        "number" : null,
+        "protocol" : "http"
+      }, {
+        "name" : "telemetry_docs_out",
+        "number" : null,
+        "protocol" : "http"
+      }, {
+        "name" : "in",
+        "number" : null,
+        "protocol" : "http"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "frontend"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "frontend-proxy-build",
+        "exposure" : "external"
+      }
+    }, {
+      "name" : "frontend",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "proxy_in",
+        "number" : null,
+        "protocol" : "http"
+      }, {
+        "name" : "ad_out",
+        "number" : null,
+        "protocol" : "grpc"
+      }, {
+        "name" : "cart_out",
+        "number" : null,
+        "protocol" : "grpc"
+      }, {
+        "name" : "checkout_out",
+        "number" : null,
+        "protocol" : "grpc"
+      }, {
+        "name" : "currency_out",
+        "number" : null,
+        "protocol" : "grpc"
+      }, {
+        "name" : "productcatalog_out",
+        "number" : null,
+        "protocol" : "grpc"
+      }, {
+        "name" : "quote_out",
+        "number" : null,
+        "protocol" : "http"
+      }, {
+        "name" : "recommendation_out",
+        "number" : null,
+        "protocol" : "grpc"
+      }, {
+        "name" : "shipping_out",
+        "number" : null,
+        "protocol" : "grpc"
+      }, {
+        "name" : "imageprovider_out",
+        "number" : null,
+        "protocol" : "http"
+      }, {
+        "name" : "otel_collector_out",
+        "number" : null,
+        "protocol" : "http"
+      }, {
+        "name" : "flagd_out",
+        "number" : null,
+        "protocol" : "grpc"
+      }, {
+        "name" : "in",
+        "number" : null,
+        "protocol" : "http"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "frontend"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "frontend-build",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "ad",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "fe_in",
+        "number" : null,
+        "protocol" : "grpc"
+      }, {
+        "name" : "otel_collector_out",
+        "number" : null,
+        "protocol" : "http"
+      }, {
+        "name" : "flagd_out",
+        "number" : null,
+        "protocol" : "grpc"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "ads"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "ad-build",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "cart",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "fe_in",
+        "number" : null,
+        "protocol" : "grpc"
+      }, {
+        "name" : "checkout_in",
+        "number" : null,
+        "protocol" : "grpc"
+      }, {
+        "name" : "valkey_out",
+        "number" : null,
+        "protocol" : "tcp"
+      }, {
+        "name" : "otel_collector_out",
+        "number" : null,
+        "protocol" : "http"
+      }, {
+        "name" : "flagd_out",
+        "number" : null,
+        "protocol" : "grpc"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "cart"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "cart-build",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "valkey-cart",
+      "type" : "Data",
+      "ports" : [ {
+        "name" : "cart_in",
+        "number" : null,
+        "protocol" : "tcp"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "cart",
+        "DataClass" : "session"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "valkey-cart-build",
+        "persistent" : false,
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "checkout",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "fe_in",
+        "number" : null,
+        "protocol" : "grpc"
+      }, {
+        "name" : "cart_out",
+        "number" : null,
+        "protocol" : "grpc"
+      }, {
+        "name" : "currency_out",
+        "number" : null,
+        "protocol" : "grpc"
+      }, {
+        "name" : "email_out",
+        "number" : null,
+        "protocol" : "http"
+      }, {
+        "name" : "payment_out",
+        "number" : null,
+        "protocol" : "grpc"
+      }, {
+        "name" : "productcatalog_out",
+        "number" : null,
+        "protocol" : "grpc"
+      }, {
+        "name" : "shipping_out",
+        "number" : null,
+        "protocol" : "grpc"
+      }, {
+        "name" : "otel_collector_out",
+        "number" : null,
+        "protocol" : "http"
+      }, {
+        "name" : "flagd_out",
+        "number" : null,
+        "protocol" : "grpc"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "checkout"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "checkout-build",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "currency",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "fe_in",
+        "number" : null,
+        "protocol" : "grpc"
+      }, {
+        "name" : "checkout_in",
+        "number" : null,
+        "protocol" : "grpc"
+      }, {
+        "name" : "otel_collector_out",
+        "number" : null,
+        "protocol" : "http"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "currency"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "currency-build",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "email",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "checkout_in",
+        "number" : null,
+        "protocol" : "http"
+      }, {
+        "name" : "otel_collector_out",
+        "number" : null,
+        "protocol" : "http"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "email"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "email-build",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "payment",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "checkout_in",
+        "number" : null,
+        "protocol" : "grpc"
+      }, {
+        "name" : "otel_collector_out",
+        "number" : null,
+        "protocol" : "http"
+      }, {
+        "name" : "flagd_out",
+        "number" : null,
+        "protocol" : "grpc"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "payment"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "payment-build",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "product-catalog",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "fe_in",
+        "number" : null,
+        "protocol" : "grpc"
+      }, {
+        "name" : "checkout_in",
+        "number" : null,
+        "protocol" : "grpc"
+      }, {
+        "name" : "recommendation_in",
+        "number" : null,
+        "protocol" : "grpc"
+      }, {
+        "name" : "db_out",
+        "number" : null,
+        "protocol" : "tcp"
+      }, {
+        "name" : "otel_collector_out",
+        "number" : null,
+        "protocol" : "http"
+      }, {
+        "name" : "flagd_out",
+        "number" : null,
+        "protocol" : "grpc"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "catalog"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "product-catalog-build",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "astronomy-db",
+      "type" : "Data",
+      "ports" : [ {
+        "name" : "catalog_in",
+        "number" : null,
+        "protocol" : "tcp"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "catalog",
+        "DataClass" : "product"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "astronomy-db-build",
+        "persistent" : false,
+        "storage" : "unspecified",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "quote",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "fe_in",
+        "number" : null,
+        "protocol" : "http"
+      }, {
+        "name" : "otel_collector_out",
+        "number" : null,
+        "protocol" : "http"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "shipping"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "quote-build",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "recommendation",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "fe_in",
+        "number" : null,
+        "protocol" : "grpc"
+      }, {
+        "name" : "productcatalog_out",
+        "number" : null,
+        "protocol" : "grpc"
+      }, {
+        "name" : "otel_collector_out",
+        "number" : null,
+        "protocol" : "http"
+      }, {
+        "name" : "flagd_out",
+        "number" : null,
+        "protocol" : "grpc"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "catalog"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "recommendation-build",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "shipping",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "fe_in",
+        "number" : null,
+        "protocol" : "grpc"
+      }, {
+        "name" : "checkout_in",
+        "number" : null,
+        "protocol" : "grpc"
+      }, {
+        "name" : "otel_collector_out",
+        "number" : null,
+        "protocol" : "http"
+      }, {
+        "name" : "flagd_out",
+        "number" : null,
+        "protocol" : "grpc"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "shipping"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "shipping-build",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "image-provider",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "fe_in",
+        "number" : null,
+        "protocol" : "http"
+      }, {
+        "name" : "otel_collector_out",
+        "number" : null,
+        "protocol" : "http"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "media"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "image-provider-build",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "flagd",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "in",
+        "number" : 8013,
+        "protocol" : "grpc"
+      }, {
+        "name" : "otel_collector_out",
+        "number" : null,
+        "protocol" : "http"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "observability"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "flagd-build",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "flagd-ui",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "in",
+        "number" : 4000,
+        "protocol" : "http"
+      }, {
+        "name" : "otel_collector_out",
+        "number" : null,
+        "protocol" : "http"
+      }, {
+        "name" : "flagd_out",
+        "number" : null,
+        "protocol" : "grpc"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "observability"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "flagd-ui-build",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "load-generator",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "otel_collector_out",
+        "number" : null,
+        "protocol" : "http"
+      }, {
+        "name" : "flagd_out",
+        "number" : null,
+        "protocol" : "grpc"
+      }, {
+        "name" : "frontend_out",
+        "number" : null,
+        "protocol" : "http"
+      }, {
+        "name" : "frontend_proxy_out",
+        "number" : null,
+        "protocol" : "http"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "observability"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "load-generator-build",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "otel-collector",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "in",
+        "number" : 4318,
+        "protocol" : "http"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "observability"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "otel-collector-build",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "telemetry-docs",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "in",
+        "number" : 8080,
+        "protocol" : "http"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "observability"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "telemetry-docs-build",
+        "exposure" : "internal"
+      }
+    } ],
+    "connectors" : [ {
+      "name" : "Internet",
+      "external" : true,
+      "protocol" : "http"
+    }, {
+      "name" : "Proxy_to_Frontend",
+      "external" : false,
+      "protocol" : "http"
+    }, {
+      "name" : "FE_to_Ad",
+      "external" : false,
+      "protocol" : "grpc"
+    }, {
+      "name" : "FE_to_Cart",
+      "external" : false,
+      "protocol" : "grpc"
+    }, {
+      "name" : "FE_to_Checkout",
+      "external" : false,
+      "protocol" : "grpc"
+    }, {
+      "name" : "FE_to_Currency",
+      "external" : false,
+      "protocol" : "grpc"
+    }, {
+      "name" : "FE_to_ProductCatalog",
+      "external" : false,
+      "protocol" : "grpc"
+    }, {
+      "name" : "FE_to_Quote",
+      "external" : false,
+      "protocol" : "http"
+    }, {
+      "name" : "FE_to_Recommendation",
+      "external" : false,
+      "protocol" : "grpc"
+    }, {
+      "name" : "FE_to_Shipping",
+      "external" : false,
+      "protocol" : "grpc"
+    }, {
+      "name" : "FE_to_ImageProvider",
+      "external" : false,
+      "protocol" : "http"
+    }, {
+      "name" : "Cart_to_Valkey",
+      "external" : false,
+      "protocol" : "tcp"
+    }, {
+      "name" : "Checkout_to_Cart",
+      "external" : false,
+      "protocol" : "grpc"
+    }, {
+      "name" : "Checkout_to_Currency",
+      "external" : false,
+      "protocol" : "grpc"
+    }, {
+      "name" : "Checkout_to_Email",
+      "external" : false,
+      "protocol" : "http"
+    }, {
+      "name" : "Checkout_to_Payment",
+      "external" : false,
+      "protocol" : "grpc"
+    }, {
+      "name" : "Checkout_to_ProductCatalog",
+      "external" : false,
+      "protocol" : "grpc"
+    }, {
+      "name" : "Checkout_to_Shipping",
+      "external" : false,
+      "protocol" : "grpc"
+    }, {
+      "name" : "ProductCatalog_to_DB",
+      "external" : false,
+      "protocol" : "tcp"
+    }, {
+      "name" : "Recommendation_to_ProductCatalog",
+      "external" : false,
+      "protocol" : "grpc"
+    }, {
+      "name" : "ad_to_otel-collector",
+      "external" : false,
+      "protocol" : "http"
+    }, {
+      "name" : "ad_to_flagd",
+      "external" : false,
+      "protocol" : "grpc"
+    }, {
+      "name" : "cart_to_otel-collector",
+      "external" : false,
+      "protocol" : "http"
+    }, {
+      "name" : "cart_to_flagd",
+      "external" : false,
+      "protocol" : "grpc"
+    }, {
+      "name" : "checkout_to_otel-collector",
+      "external" : false,
+      "protocol" : "http"
+    }, {
+      "name" : "checkout_to_flagd",
+      "external" : false,
+      "protocol" : "grpc"
+    }, {
+      "name" : "currency_to_otel-collector",
+      "external" : false,
+      "protocol" : "http"
+    }, {
+      "name" : "email_to_otel-collector",
+      "external" : false,
+      "protocol" : "http"
+    }, {
+      "name" : "frontend_to_otel-collector",
+      "external" : false,
+      "protocol" : "http"
+    }, {
+      "name" : "frontend_to_flagd",
+      "external" : false,
+      "protocol" : "grpc"
+    }, {
+      "name" : "image-provider_to_otel-collector",
+      "external" : false,
+      "protocol" : "http"
+    }, {
+      "name" : "load-generator_to_otel-collector",
+      "external" : false,
+      "protocol" : "http"
+    }, {
+      "name" : "load-generator_to_flagd",
+      "external" : false,
+      "protocol" : "grpc"
+    }, {
+      "name" : "payment_to_otel-collector",
+      "external" : false,
+      "protocol" : "http"
+    }, {
+      "name" : "payment_to_flagd",
+      "external" : false,
+      "protocol" : "grpc"
+    }, {
+      "name" : "product-catalog_to_otel-collector",
+      "external" : false,
+      "protocol" : "http"
+    }, {
+      "name" : "product-catalog_to_flagd",
+      "external" : false,
+      "protocol" : "grpc"
+    }, {
+      "name" : "quote_to_otel-collector",
+      "external" : false,
+      "protocol" : "http"
+    }, {
+      "name" : "recommendation_to_otel-collector",
+      "external" : false,
+      "protocol" : "http"
+    }, {
+      "name" : "recommendation_to_flagd",
+      "external" : false,
+      "protocol" : "grpc"
+    }, {
+      "name" : "shipping_to_otel-collector",
+      "external" : false,
+      "protocol" : "http"
+    }, {
+      "name" : "shipping_to_flagd",
+      "external" : false,
+      "protocol" : "grpc"
+    }, {
+      "name" : "flagd_to_otel-collector",
+      "external" : false,
+      "protocol" : "http"
+    }, {
+      "name" : "flagd-ui_to_otel-collector",
+      "external" : false,
+      "protocol" : "http"
+    }, {
+      "name" : "flagd-ui_to_flagd",
+      "external" : false,
+      "protocol" : "grpc"
+    }, {
+      "name" : "frontend-proxy_to_flagd-ui",
+      "external" : false,
+      "protocol" : "http"
+    }, {
+      "name" : "frontend-proxy_to_telemetry-docs",
+      "external" : false,
+      "protocol" : "http"
+    }, {
+      "name" : "load-generator_to_frontend",
+      "external" : false,
+      "protocol" : "http"
+    }, {
+      "name" : "load-generator_to_frontend-proxy",
+      "external" : false,
+      "protocol" : "http"
+    } ],
+    "links" : [ {
+      "portRef" : "frontend-proxy.http_in",
+      "connectorName" : "Internet",
+      "direction" : "IN"
+    }, {
+      "portRef" : "frontend-proxy.frontend_out",
+      "connectorName" : "Proxy_to_Frontend",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "frontend.proxy_in",
+      "connectorName" : "Proxy_to_Frontend",
+      "direction" : "IN"
+    }, {
+      "portRef" : "frontend.ad_out",
+      "connectorName" : "FE_to_Ad",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "ad.fe_in",
+      "connectorName" : "FE_to_Ad",
+      "direction" : "IN"
+    }, {
+      "portRef" : "frontend.cart_out",
+      "connectorName" : "FE_to_Cart",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "cart.fe_in",
+      "connectorName" : "FE_to_Cart",
+      "direction" : "IN"
+    }, {
+      "portRef" : "frontend.checkout_out",
+      "connectorName" : "FE_to_Checkout",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "checkout.fe_in",
+      "connectorName" : "FE_to_Checkout",
+      "direction" : "IN"
+    }, {
+      "portRef" : "frontend.currency_out",
+      "connectorName" : "FE_to_Currency",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "currency.fe_in",
+      "connectorName" : "FE_to_Currency",
+      "direction" : "IN"
+    }, {
+      "portRef" : "frontend.productcatalog_out",
+      "connectorName" : "FE_to_ProductCatalog",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "product-catalog.fe_in",
+      "connectorName" : "FE_to_ProductCatalog",
+      "direction" : "IN"
+    }, {
+      "portRef" : "frontend.quote_out",
+      "connectorName" : "FE_to_Quote",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "quote.fe_in",
+      "connectorName" : "FE_to_Quote",
+      "direction" : "IN"
+    }, {
+      "portRef" : "frontend.recommendation_out",
+      "connectorName" : "FE_to_Recommendation",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "recommendation.fe_in",
+      "connectorName" : "FE_to_Recommendation",
+      "direction" : "IN"
+    }, {
+      "portRef" : "frontend.shipping_out",
+      "connectorName" : "FE_to_Shipping",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "shipping.fe_in",
+      "connectorName" : "FE_to_Shipping",
+      "direction" : "IN"
+    }, {
+      "portRef" : "frontend.imageprovider_out",
+      "connectorName" : "FE_to_ImageProvider",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "image-provider.fe_in",
+      "connectorName" : "FE_to_ImageProvider",
+      "direction" : "IN"
+    }, {
+      "portRef" : "cart.valkey_out",
+      "connectorName" : "Cart_to_Valkey",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "valkey-cart.cart_in",
+      "connectorName" : "Cart_to_Valkey",
+      "direction" : "IN"
+    }, {
+      "portRef" : "checkout.cart_out",
+      "connectorName" : "Checkout_to_Cart",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "cart.checkout_in",
+      "connectorName" : "Checkout_to_Cart",
+      "direction" : "IN"
+    }, {
+      "portRef" : "checkout.currency_out",
+      "connectorName" : "Checkout_to_Currency",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "currency.checkout_in",
+      "connectorName" : "Checkout_to_Currency",
+      "direction" : "IN"
+    }, {
+      "portRef" : "checkout.email_out",
+      "connectorName" : "Checkout_to_Email",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "email.checkout_in",
+      "connectorName" : "Checkout_to_Email",
+      "direction" : "IN"
+    }, {
+      "portRef" : "checkout.payment_out",
+      "connectorName" : "Checkout_to_Payment",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "payment.checkout_in",
+      "connectorName" : "Checkout_to_Payment",
+      "direction" : "IN"
+    }, {
+      "portRef" : "checkout.productcatalog_out",
+      "connectorName" : "Checkout_to_ProductCatalog",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "product-catalog.checkout_in",
+      "connectorName" : "Checkout_to_ProductCatalog",
+      "direction" : "IN"
+    }, {
+      "portRef" : "checkout.shipping_out",
+      "connectorName" : "Checkout_to_Shipping",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "shipping.checkout_in",
+      "connectorName" : "Checkout_to_Shipping",
+      "direction" : "IN"
+    }, {
+      "portRef" : "product-catalog.db_out",
+      "connectorName" : "ProductCatalog_to_DB",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "astronomy-db.catalog_in",
+      "connectorName" : "ProductCatalog_to_DB",
+      "direction" : "IN"
+    }, {
+      "portRef" : "recommendation.productcatalog_out",
+      "connectorName" : "Recommendation_to_ProductCatalog",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "product-catalog.recommendation_in",
+      "connectorName" : "Recommendation_to_ProductCatalog",
+      "direction" : "IN"
+    }, {
+      "portRef" : "ad.otel_collector_out",
+      "connectorName" : "ad_to_otel-collector",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "otel-collector.in",
+      "connectorName" : "ad_to_otel-collector",
+      "direction" : "IN"
+    }, {
+      "portRef" : "ad.flagd_out",
+      "connectorName" : "ad_to_flagd",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "flagd.in",
+      "connectorName" : "ad_to_flagd",
+      "direction" : "IN"
+    }, {
+      "portRef" : "cart.otel_collector_out",
+      "connectorName" : "cart_to_otel-collector",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "otel-collector.in",
+      "connectorName" : "cart_to_otel-collector",
+      "direction" : "IN"
+    }, {
+      "portRef" : "cart.flagd_out",
+      "connectorName" : "cart_to_flagd",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "flagd.in",
+      "connectorName" : "cart_to_flagd",
+      "direction" : "IN"
+    }, {
+      "portRef" : "checkout.otel_collector_out",
+      "connectorName" : "checkout_to_otel-collector",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "otel-collector.in",
+      "connectorName" : "checkout_to_otel-collector",
+      "direction" : "IN"
+    }, {
+      "portRef" : "checkout.flagd_out",
+      "connectorName" : "checkout_to_flagd",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "flagd.in",
+      "connectorName" : "checkout_to_flagd",
+      "direction" : "IN"
+    }, {
+      "portRef" : "currency.otel_collector_out",
+      "connectorName" : "currency_to_otel-collector",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "otel-collector.in",
+      "connectorName" : "currency_to_otel-collector",
+      "direction" : "IN"
+    }, {
+      "portRef" : "email.otel_collector_out",
+      "connectorName" : "email_to_otel-collector",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "otel-collector.in",
+      "connectorName" : "email_to_otel-collector",
+      "direction" : "IN"
+    }, {
+      "portRef" : "frontend.otel_collector_out",
+      "connectorName" : "frontend_to_otel-collector",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "otel-collector.in",
+      "connectorName" : "frontend_to_otel-collector",
+      "direction" : "IN"
+    }, {
+      "portRef" : "frontend.flagd_out",
+      "connectorName" : "frontend_to_flagd",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "flagd.in",
+      "connectorName" : "frontend_to_flagd",
+      "direction" : "IN"
+    }, {
+      "portRef" : "image-provider.otel_collector_out",
+      "connectorName" : "image-provider_to_otel-collector",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "otel-collector.in",
+      "connectorName" : "image-provider_to_otel-collector",
+      "direction" : "IN"
+    }, {
+      "portRef" : "load-generator.otel_collector_out",
+      "connectorName" : "load-generator_to_otel-collector",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "otel-collector.in",
+      "connectorName" : "load-generator_to_otel-collector",
+      "direction" : "IN"
+    }, {
+      "portRef" : "load-generator.flagd_out",
+      "connectorName" : "load-generator_to_flagd",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "flagd.in",
+      "connectorName" : "load-generator_to_flagd",
+      "direction" : "IN"
+    }, {
+      "portRef" : "payment.otel_collector_out",
+      "connectorName" : "payment_to_otel-collector",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "otel-collector.in",
+      "connectorName" : "payment_to_otel-collector",
+      "direction" : "IN"
+    }, {
+      "portRef" : "payment.flagd_out",
+      "connectorName" : "payment_to_flagd",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "flagd.in",
+      "connectorName" : "payment_to_flagd",
+      "direction" : "IN"
+    }, {
+      "portRef" : "product-catalog.otel_collector_out",
+      "connectorName" : "product-catalog_to_otel-collector",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "otel-collector.in",
+      "connectorName" : "product-catalog_to_otel-collector",
+      "direction" : "IN"
+    }, {
+      "portRef" : "product-catalog.flagd_out",
+      "connectorName" : "product-catalog_to_flagd",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "flagd.in",
+      "connectorName" : "product-catalog_to_flagd",
+      "direction" : "IN"
+    }, {
+      "portRef" : "quote.otel_collector_out",
+      "connectorName" : "quote_to_otel-collector",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "otel-collector.in",
+      "connectorName" : "quote_to_otel-collector",
+      "direction" : "IN"
+    }, {
+      "portRef" : "recommendation.otel_collector_out",
+      "connectorName" : "recommendation_to_otel-collector",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "otel-collector.in",
+      "connectorName" : "recommendation_to_otel-collector",
+      "direction" : "IN"
+    }, {
+      "portRef" : "recommendation.flagd_out",
+      "connectorName" : "recommendation_to_flagd",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "flagd.in",
+      "connectorName" : "recommendation_to_flagd",
+      "direction" : "IN"
+    }, {
+      "portRef" : "shipping.otel_collector_out",
+      "connectorName" : "shipping_to_otel-collector",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "otel-collector.in",
+      "connectorName" : "shipping_to_otel-collector",
+      "direction" : "IN"
+    }, {
+      "portRef" : "shipping.flagd_out",
+      "connectorName" : "shipping_to_flagd",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "flagd.in",
+      "connectorName" : "shipping_to_flagd",
+      "direction" : "IN"
+    }, {
+      "portRef" : "flagd.otel_collector_out",
+      "connectorName" : "flagd_to_otel-collector",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "otel-collector.in",
+      "connectorName" : "flagd_to_otel-collector",
+      "direction" : "IN"
+    }, {
+      "portRef" : "flagd-ui.otel_collector_out",
+      "connectorName" : "flagd-ui_to_otel-collector",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "otel-collector.in",
+      "connectorName" : "flagd-ui_to_otel-collector",
+      "direction" : "IN"
+    }, {
+      "portRef" : "flagd-ui.flagd_out",
+      "connectorName" : "flagd-ui_to_flagd",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "flagd.in",
+      "connectorName" : "flagd-ui_to_flagd",
+      "direction" : "IN"
+    }, {
+      "portRef" : "frontend-proxy.flagd_ui_out",
+      "connectorName" : "frontend-proxy_to_flagd-ui",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "flagd-ui.in",
+      "connectorName" : "frontend-proxy_to_flagd-ui",
+      "direction" : "IN"
+    }, {
+      "portRef" : "frontend-proxy.telemetry_docs_out",
+      "connectorName" : "frontend-proxy_to_telemetry-docs",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "telemetry-docs.in",
+      "connectorName" : "frontend-proxy_to_telemetry-docs",
+      "direction" : "IN"
+    }, {
+      "portRef" : "load-generator.frontend_out",
+      "connectorName" : "load-generator_to_frontend",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "frontend.in",
+      "connectorName" : "load-generator_to_frontend",
+      "direction" : "IN"
+    }, {
+      "portRef" : "load-generator.frontend_proxy_out",
+      "connectorName" : "load-generator_to_frontend-proxy",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "frontend-proxy.in",
+      "connectorName" : "load-generator_to_frontend-proxy",
+      "direction" : "IN"
+    } ],
+    "implementations" : [ {
+      "name" : "frontend-proxy-build",
+      "runtime" : "container",
+      "image" : null,
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "frontend-build",
+      "runtime" : "container",
+      "image" : null,
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "ad-build",
+      "runtime" : "container",
+      "image" : null,
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "cart-build",
+      "runtime" : "container",
+      "image" : null,
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "valkey-cart-build",
+      "runtime" : "container",
+      "image" : "valkey",
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "checkout-build",
+      "runtime" : "container",
+      "image" : null,
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "currency-build",
+      "runtime" : "container",
+      "image" : null,
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "email-build",
+      "runtime" : "container",
+      "image" : null,
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "payment-build",
+      "runtime" : "container",
+      "image" : null,
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "product-catalog-build",
+      "runtime" : "container",
+      "image" : null,
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "astronomy-db-build",
+      "runtime" : "container",
+      "image" : "postgres",
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "quote-build",
+      "runtime" : "container",
+      "image" : null,
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "recommendation-build",
+      "runtime" : "container",
+      "image" : null,
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "shipping-build",
+      "runtime" : "container",
+      "image" : null,
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "image-provider-build",
+      "runtime" : "container",
+      "image" : null,
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "flagd-build",
+      "runtime" : "container",
+      "image" : null,
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "flagd-ui-build",
+      "runtime" : "container",
+      "image" : null,
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "load-generator-build",
+      "runtime" : "container",
+      "image" : null,
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "otel-collector-build",
+      "runtime" : "container",
+      "image" : null,
+      "resources" : { },
+      "config" : { }
+    }, {
+      "name" : "telemetry-docs-build",
+      "runtime" : "container",
+      "image" : null,
+      "resources" : { },
+      "config" : { }
+    } ]
+  },
+  "security" : {
+    "attributes" : [ {
+      "name" : "Domain",
+      "values" : [ "frontend", "ads", "cart", "checkout", "currency", "email", "payment", "catalog", "shipping", "observability" ]
+    }, {
+      "name" : "DataClass",
+      "values" : [ "session", "product" ]
+    } ],
+    "contexts" : [ {
+      "name" : "proxyCtx",
+      "conditions" : [ {
+        "attribute" : "Domain",
+        "value" : "frontend"
+      } ]
+    }, {
+      "name" : "checkoutCtx",
+      "conditions" : [ {
+        "attribute" : "Domain",
+        "value" : "checkout"
+      } ]
+    }, {
+      "name" : "paymentCtx",
+      "conditions" : [ {
+        "attribute" : "Domain",
+        "value" : "payment"
+      } ]
+    }, {
+      "name" : "cartDataCtx",
+      "conditions" : [ {
+        "attribute" : "DataClass",
+        "value" : "session"
+      } ]
+    }, {
+      "name" : "viaCart",
+      "conditions" : [ {
+        "attribute" : "Domain",
+        "value" : "cart"
+      } ]
+    } ],
+    "rules" : [ {
+      "type" : "Isolation",
+      "sctx" : {
+        "name" : "cartDataCtx"
+      },
+      "tctx" : {
+        "name" : "proxyCtx"
+      }
+    }, {
+      "type" : "Confidentiality",
+      "sctx" : {
+        "name" : "checkoutCtx"
+      },
+      "tctx" : {
+        "name" : "paymentCtx"
+      }
+    }, {
+      "type" : "Availability",
+      "target" : {
+        "name" : "proxyCtx"
+      },
+      "level" : "medium"
+    }, {
+      "type" : "Availability",
+      "target" : {
+        "name" : "checkoutCtx"
+      },
+      "level" : "medium"
+    } ]
+  },
+  "coverage" : {
+    "proxyCtx" : [ {
+      "name" : "frontend-proxy",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "frontend"
+      },
+      "ports" : [ "http_in", "frontend_out", "flagd_ui_out", "telemetry_docs_out", "in" ]
+    }, {
+      "name" : "frontend",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "frontend"
+      },
+      "ports" : [ "proxy_in", "ad_out", "cart_out", "checkout_out", "currency_out", "productcatalog_out", "quote_out", "recommendation_out", "shipping_out", "imageprovider_out", "otel_collector_out", "flagd_out", "in" ]
+    } ],
+    "checkoutCtx" : [ {
+      "name" : "checkout",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "checkout"
+      },
+      "ports" : [ "fe_in", "cart_out", "currency_out", "email_out", "payment_out", "productcatalog_out", "shipping_out", "otel_collector_out", "flagd_out" ]
+    } ],
+    "paymentCtx" : [ {
+      "name" : "payment",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "payment"
+      },
+      "ports" : [ "checkout_in", "otel_collector_out", "flagd_out" ]
+    } ],
+    "cartDataCtx" : [ {
+      "name" : "valkey-cart",
+      "type" : "Data",
+      "attributes" : {
+        "Domain" : "cart",
+        "DataClass" : "session"
+      },
+      "ports" : [ "cart_in" ]
+    } ],
+    "viaCart" : [ {
+      "name" : "cart",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "cart"
+      },
+      "ports" : [ "fe_in", "checkout_in", "valkey_out", "otel_collector_out", "flagd_out" ]
+    }, {
+      "name" : "valkey-cart",
+      "type" : "Data",
+      "attributes" : {
+        "Domain" : "cart",
+        "DataClass" : "session"
+      },
+      "ports" : [ "cart_in" ]
+    } ]
+  },
+  "resolvedRules" : [ {
+    "type" : "Isolation",
+    "sctx" : [ {
+      "name" : "valkey-cart",
+      "type" : "Data",
+      "attributes" : {
+        "Domain" : "cart",
+        "DataClass" : "session"
+      },
+      "ports" : [ "cart_in" ]
+    } ],
+    "tctx" : [ {
+      "name" : "frontend-proxy",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "frontend"
+      },
+      "ports" : [ "http_in", "frontend_out", "flagd_ui_out", "telemetry_docs_out", "in" ]
+    }, {
+      "name" : "frontend",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "frontend"
+      },
+      "ports" : [ "proxy_in", "ad_out", "cart_out", "checkout_out", "currency_out", "productcatalog_out", "quote_out", "recommendation_out", "shipping_out", "imageprovider_out", "otel_collector_out", "flagd_out", "in" ]
+    } ],
+    "actx" : [ {
+      "name" : "cart",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "cart"
+      },
+      "ports" : [ "fe_in", "checkout_in", "valkey_out", "otel_collector_out", "flagd_out" ]
+    }, {
+      "name" : "valkey-cart",
+      "type" : "Data",
+      "attributes" : {
+        "Domain" : "cart",
+        "DataClass" : "session"
+      },
+      "ports" : [ "cart_in" ]
+    } ]
+  }, {
+    "type" : "Confidentiality",
+    "sctx" : [ {
+      "name" : "checkout",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "checkout"
+      },
+      "ports" : [ "fe_in", "cart_out", "currency_out", "email_out", "payment_out", "productcatalog_out", "shipping_out", "otel_collector_out", "flagd_out" ]
+    } ],
+    "tctx" : [ {
+      "name" : "payment",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "payment"
+      },
+      "ports" : [ "checkout_in", "otel_collector_out", "flagd_out" ]
+    } ],
+    "paths" : [ {
+      "connector" : "Checkout_to_Payment",
+      "sctxLinks" : [ {
+        "port" : "checkout.payment_out",
+        "direction" : "out"
+      } ],
+      "tctxLinks" : [ {
+        "port" : "payment.checkout_in",
+        "direction" : "in"
+      } ]
+    } ]
+  }, {
+    "type" : "Availability",
+    "sctx" : [ {
+      "name" : "frontend-proxy",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "frontend"
+      },
+      "ports" : [ "http_in", "frontend_out", "flagd_ui_out", "telemetry_docs_out", "in" ]
+    }, {
+      "name" : "frontend",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "frontend"
+      },
+      "ports" : [ "proxy_in", "ad_out", "cart_out", "checkout_out", "currency_out", "productcatalog_out", "quote_out", "recommendation_out", "shipping_out", "imageprovider_out", "otel_collector_out", "flagd_out", "in" ]
+    } ]
+  }, {
+    "type" : "Availability",
+    "sctx" : [ {
+      "name" : "checkout",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "checkout"
+      },
+      "ports" : [ "fe_in", "cart_out", "currency_out", "email_out", "payment_out", "productcatalog_out", "shipping_out", "otel_collector_out", "flagd_out" ]
+    } ]
+  } ]
+}

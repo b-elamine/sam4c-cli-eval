@@ -1,0 +1,481 @@
+# Modeled from open-telemetry/opentelemetry-demo, compose.yaml (main branch,
+# fetched 2026-07-31). Ships as Docker Compose, not Kubernetes manifests --
+# Kubernetes deployment goes through a separate Helm chart repo. Using compose.yaml
+# as ground truth instead: still real, public, authoritative deployment data, just
+# a different format than the other 6 systems in this study.
+#
+# Modeled with Domain observability (previously excluded): load-generator, flagd,
+# flagd-ui, telemetry-docs, otel-collector. Edges from compose depends_on and the
+# OTEL_EXPORTER_OTLP_ENDPOINT / FLAGD_HOST env vars.
+#
+# Exposure judgment call, flagged explicitly: docker-compose maps a host port to
+# every service for local dev convenience, which is not the same as production
+# exposure. The real intended public entry point is frontend-proxy, an Envoy
+# reverse proxy explicitly fronting frontend -- modeled as the only external
+# component, not every service with a compose port mapping.
+#
+# Full-manifest pass (2026-09-20): every runnable unit of the ground-truth file is now
+# modeled, none excluded. Tooling with host ports (dev UIs) is modeled internal, same
+# exposure judgment as before. Edge sources: compose depends_on and env vars, see above.
+#
+# persistent = the data volume outlives the pod/container (PVC, volumeClaimTemplate,
+# hostPath, or a named compose volume). emptyDir, no volume, or an init-script-only bind
+# mount count as not persistent. Corrected 2026-09-20 against the repo manifests.
+
+
+name: opentelemetry-demo
+
+components:
+  - name: K8sCluster
+    type: Worker
+
+  - name: frontend-proxy
+    type: App
+    attributes: { Domain: frontend }
+    exposure: external
+    deployedOn: K8sCluster
+    implementation: frontend-proxy-build
+    ports:
+      - { name: http_in, protocol: http }
+      - { name: frontend_out, protocol: http }
+      - { name: flagd_ui_out, protocol: http }
+      - { name: telemetry_docs_out, protocol: http }
+      - { name: in, protocol: http }
+
+  - name: frontend
+    type: App
+    attributes: { Domain: frontend }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: frontend-build
+    ports:
+      - { name: proxy_in, protocol: http }
+      - { name: ad_out, protocol: grpc }
+      - { name: cart_out, protocol: grpc }
+      - { name: checkout_out, protocol: grpc }
+      - { name: currency_out, protocol: grpc }
+      - { name: productcatalog_out, protocol: grpc }
+      - { name: quote_out, protocol: http }
+      - { name: recommendation_out, protocol: grpc }
+      - { name: shipping_out, protocol: grpc }
+      - { name: imageprovider_out, protocol: http }
+      - { name: otel_collector_out, protocol: http }
+      - { name: flagd_out, protocol: grpc }
+      - { name: in, protocol: http }
+
+  - name: ad
+    type: App
+    attributes: { Domain: ads }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: ad-build
+    ports: [{ name: fe_in, protocol: grpc }, { name: otel_collector_out, protocol: http }, { name: flagd_out, protocol: grpc }]
+
+  - name: cart
+    type: App
+    attributes: { Domain: cart }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: cart-build
+    ports:
+      - { name: fe_in, protocol: grpc }
+      - { name: checkout_in, protocol: grpc }
+      - { name: valkey_out, protocol: tcp }
+      - { name: otel_collector_out, protocol: http }
+      - { name: flagd_out, protocol: grpc }
+
+  - name: valkey-cart
+    type: Data
+    attributes: { Domain: cart, DataClass: session }
+    exposure: internal
+    persistent: false
+    deployedOn: K8sCluster
+    implementation: valkey-cart-build
+    ports: [{ name: cart_in, protocol: tcp }]
+
+  - name: checkout
+    type: App
+    attributes: { Domain: checkout }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: checkout-build
+    ports:
+      - { name: fe_in, protocol: grpc }
+      - { name: cart_out, protocol: grpc }
+      - { name: currency_out, protocol: grpc }
+      - { name: email_out, protocol: http }
+      - { name: payment_out, protocol: grpc }
+      - { name: productcatalog_out, protocol: grpc }
+      - { name: shipping_out, protocol: grpc }
+      - { name: otel_collector_out, protocol: http }
+      - { name: flagd_out, protocol: grpc }
+
+  - name: currency
+    type: App
+    attributes: { Domain: currency }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: currency-build
+    ports:
+      - { name: fe_in, protocol: grpc }
+      - { name: checkout_in, protocol: grpc }
+      - { name: otel_collector_out, protocol: http }
+
+  - name: email
+    type: App
+    attributes: { Domain: email }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: email-build
+    ports: [{ name: checkout_in, protocol: http }, { name: otel_collector_out, protocol: http }]
+
+  - name: payment
+    type: App
+    attributes: { Domain: payment }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: payment-build
+    ports: [{ name: checkout_in, protocol: grpc }, { name: otel_collector_out, protocol: http }, { name: flagd_out, protocol: grpc }]
+
+  - name: product-catalog
+    type: App
+    attributes: { Domain: catalog }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: product-catalog-build
+    ports:
+      - { name: fe_in, protocol: grpc }
+      - { name: checkout_in, protocol: grpc }
+      - { name: recommendation_in, protocol: grpc }
+      - { name: db_out, protocol: tcp }
+      - { name: otel_collector_out, protocol: http }
+      - { name: flagd_out, protocol: grpc }
+
+  - name: astronomy-db
+    type: Data
+    attributes: { Domain: catalog, DataClass: product }
+    exposure: internal
+    persistent: false
+    storage: unspecified
+    deployedOn: K8sCluster
+    implementation: astronomy-db-build
+    ports: [{ name: catalog_in, protocol: tcp }]
+
+  - name: quote
+    type: App
+    attributes: { Domain: shipping }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: quote-build
+    ports: [{ name: fe_in, protocol: http }, { name: otel_collector_out, protocol: http }]
+
+  - name: recommendation
+    type: App
+    attributes: { Domain: catalog }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: recommendation-build
+    ports:
+      - { name: fe_in, protocol: grpc }
+      - { name: productcatalog_out, protocol: grpc }
+      - { name: otel_collector_out, protocol: http }
+      - { name: flagd_out, protocol: grpc }
+
+  - name: shipping
+    type: App
+    attributes: { Domain: shipping }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: shipping-build
+    ports:
+      - { name: fe_in, protocol: grpc }
+      - { name: checkout_in, protocol: grpc }
+      - { name: otel_collector_out, protocol: http }
+      - { name: flagd_out, protocol: grpc }
+
+  - name: image-provider
+    type: App
+    attributes: { Domain: media }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: image-provider-build
+    ports: [{ name: fe_in, protocol: http }, { name: otel_collector_out, protocol: http }]
+  - name: flagd
+    type: App
+    attributes: { Domain: observability }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: flagd-build
+    ports: [{ name: in, number: 8013, protocol: grpc }, { name: otel_collector_out, protocol: http }]
+  - name: flagd-ui
+    type: App
+    attributes: { Domain: observability }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: flagd-ui-build
+    ports: [{ name: in, number: 4000, protocol: http }, { name: otel_collector_out, protocol: http }, { name: flagd_out, protocol: grpc }]
+  - name: load-generator
+    type: App
+    attributes: { Domain: observability }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: load-generator-build
+    ports: [ { name: otel_collector_out, protocol: http }, { name: flagd_out, protocol: grpc }, { name: frontend_out, protocol: http }, { name: frontend_proxy_out, protocol: http }]
+  - name: otel-collector
+    type: App
+    attributes: { Domain: observability }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: otel-collector-build
+    ports: [{ name: in, number: 4318, protocol: http }]
+  - name: telemetry-docs
+    type: App
+    attributes: { Domain: observability }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: telemetry-docs-build
+    ports: [{ name: in, number: 8080, protocol: http }]
+
+connectors:
+  - name: Internet
+    external: true
+    protocol: http
+  - name: Proxy_to_Frontend
+    protocol: http
+  - name: FE_to_Ad
+    protocol: grpc
+  - name: FE_to_Cart
+    protocol: grpc
+  - name: FE_to_Checkout
+    protocol: grpc
+  - name: FE_to_Currency
+    protocol: grpc
+  - name: FE_to_ProductCatalog
+    protocol: grpc
+  - name: FE_to_Quote
+    protocol: http
+  - name: FE_to_Recommendation
+    protocol: grpc
+  - name: FE_to_Shipping
+    protocol: grpc
+  - name: FE_to_ImageProvider
+    protocol: http
+  - name: Cart_to_Valkey
+    protocol: tcp
+  - name: Checkout_to_Cart
+    protocol: grpc
+  - name: Checkout_to_Currency
+    protocol: grpc
+  - name: Checkout_to_Email
+    protocol: http
+  - name: Checkout_to_Payment
+    protocol: grpc
+  - name: Checkout_to_ProductCatalog
+    protocol: grpc
+  - name: Checkout_to_Shipping
+    protocol: grpc
+  - name: ProductCatalog_to_DB
+    protocol: tcp
+  - name: Recommendation_to_ProductCatalog
+    protocol: grpc
+  - name: ad_to_otel-collector
+    protocol: http
+  - name: ad_to_flagd
+    protocol: grpc
+  - name: cart_to_otel-collector
+    protocol: http
+  - name: cart_to_flagd
+    protocol: grpc
+  - name: checkout_to_otel-collector
+    protocol: http
+  - name: checkout_to_flagd
+    protocol: grpc
+  - name: currency_to_otel-collector
+    protocol: http
+  - name: email_to_otel-collector
+    protocol: http
+  - name: frontend_to_otel-collector
+    protocol: http
+  - name: frontend_to_flagd
+    protocol: grpc
+  - name: image-provider_to_otel-collector
+    protocol: http
+  - name: load-generator_to_otel-collector
+    protocol: http
+  - name: load-generator_to_flagd
+    protocol: grpc
+  - name: payment_to_otel-collector
+    protocol: http
+  - name: payment_to_flagd
+    protocol: grpc
+  - name: product-catalog_to_otel-collector
+    protocol: http
+  - name: product-catalog_to_flagd
+    protocol: grpc
+  - name: quote_to_otel-collector
+    protocol: http
+  - name: recommendation_to_otel-collector
+    protocol: http
+  - name: recommendation_to_flagd
+    protocol: grpc
+  - name: shipping_to_otel-collector
+    protocol: http
+  - name: shipping_to_flagd
+    protocol: grpc
+  - name: flagd_to_otel-collector
+    protocol: http
+  - name: flagd-ui_to_otel-collector
+    protocol: http
+  - name: flagd-ui_to_flagd
+    protocol: grpc
+  - name: frontend-proxy_to_flagd-ui
+    protocol: http
+  - name: frontend-proxy_to_telemetry-docs
+    protocol: http
+  - name: load-generator_to_frontend
+    protocol: http
+  - name: load-generator_to_frontend-proxy
+    protocol: http
+
+links:
+  - { port: frontend-proxy.http_in, connector: Internet, direction: in }
+  - { port: frontend-proxy.frontend_out, connector: Proxy_to_Frontend, direction: out }
+  - { port: frontend.proxy_in, connector: Proxy_to_Frontend, direction: in }
+  - { port: frontend.ad_out, connector: FE_to_Ad, direction: out }
+  - { port: ad.fe_in, connector: FE_to_Ad, direction: in }
+  - { port: frontend.cart_out, connector: FE_to_Cart, direction: out }
+  - { port: cart.fe_in, connector: FE_to_Cart, direction: in }
+  - { port: frontend.checkout_out, connector: FE_to_Checkout, direction: out }
+  - { port: checkout.fe_in, connector: FE_to_Checkout, direction: in }
+  - { port: frontend.currency_out, connector: FE_to_Currency, direction: out }
+  - { port: currency.fe_in, connector: FE_to_Currency, direction: in }
+  - { port: frontend.productcatalog_out, connector: FE_to_ProductCatalog, direction: out }
+  - { port: product-catalog.fe_in, connector: FE_to_ProductCatalog, direction: in }
+  - { port: frontend.quote_out, connector: FE_to_Quote, direction: out }
+  - { port: quote.fe_in, connector: FE_to_Quote, direction: in }
+  - { port: frontend.recommendation_out, connector: FE_to_Recommendation, direction: out }
+  - { port: recommendation.fe_in, connector: FE_to_Recommendation, direction: in }
+  - { port: frontend.shipping_out, connector: FE_to_Shipping, direction: out }
+  - { port: shipping.fe_in, connector: FE_to_Shipping, direction: in }
+  - { port: frontend.imageprovider_out, connector: FE_to_ImageProvider, direction: out }
+  - { port: image-provider.fe_in, connector: FE_to_ImageProvider, direction: in }
+  - { port: cart.valkey_out, connector: Cart_to_Valkey, direction: out }
+  - { port: valkey-cart.cart_in, connector: Cart_to_Valkey, direction: in }
+  - { port: checkout.cart_out, connector: Checkout_to_Cart, direction: out }
+  - { port: cart.checkout_in, connector: Checkout_to_Cart, direction: in }
+  - { port: checkout.currency_out, connector: Checkout_to_Currency, direction: out }
+  - { port: currency.checkout_in, connector: Checkout_to_Currency, direction: in }
+  - { port: checkout.email_out, connector: Checkout_to_Email, direction: out }
+  - { port: email.checkout_in, connector: Checkout_to_Email, direction: in }
+  - { port: checkout.payment_out, connector: Checkout_to_Payment, direction: out }
+  - { port: payment.checkout_in, connector: Checkout_to_Payment, direction: in }
+  - { port: checkout.productcatalog_out, connector: Checkout_to_ProductCatalog, direction: out }
+  - { port: product-catalog.checkout_in, connector: Checkout_to_ProductCatalog, direction: in }
+  - { port: checkout.shipping_out, connector: Checkout_to_Shipping, direction: out }
+  - { port: shipping.checkout_in, connector: Checkout_to_Shipping, direction: in }
+  - { port: product-catalog.db_out, connector: ProductCatalog_to_DB, direction: out }
+  - { port: astronomy-db.catalog_in, connector: ProductCatalog_to_DB, direction: in }
+  - { port: recommendation.productcatalog_out, connector: Recommendation_to_ProductCatalog, direction: out }
+  - { port: product-catalog.recommendation_in, connector: Recommendation_to_ProductCatalog, direction: in }
+  - { port: ad.otel_collector_out, connector: ad_to_otel-collector, direction: out }
+  - { port: otel-collector.in, connector: ad_to_otel-collector, direction: in }
+  - { port: ad.flagd_out, connector: ad_to_flagd, direction: out }
+  - { port: flagd.in, connector: ad_to_flagd, direction: in }
+  - { port: cart.otel_collector_out, connector: cart_to_otel-collector, direction: out }
+  - { port: otel-collector.in, connector: cart_to_otel-collector, direction: in }
+  - { port: cart.flagd_out, connector: cart_to_flagd, direction: out }
+  - { port: flagd.in, connector: cart_to_flagd, direction: in }
+  - { port: checkout.otel_collector_out, connector: checkout_to_otel-collector, direction: out }
+  - { port: otel-collector.in, connector: checkout_to_otel-collector, direction: in }
+  - { port: checkout.flagd_out, connector: checkout_to_flagd, direction: out }
+  - { port: flagd.in, connector: checkout_to_flagd, direction: in }
+  - { port: currency.otel_collector_out, connector: currency_to_otel-collector, direction: out }
+  - { port: otel-collector.in, connector: currency_to_otel-collector, direction: in }
+  - { port: email.otel_collector_out, connector: email_to_otel-collector, direction: out }
+  - { port: otel-collector.in, connector: email_to_otel-collector, direction: in }
+  - { port: frontend.otel_collector_out, connector: frontend_to_otel-collector, direction: out }
+  - { port: otel-collector.in, connector: frontend_to_otel-collector, direction: in }
+  - { port: frontend.flagd_out, connector: frontend_to_flagd, direction: out }
+  - { port: flagd.in, connector: frontend_to_flagd, direction: in }
+  - { port: image-provider.otel_collector_out, connector: image-provider_to_otel-collector, direction: out }
+  - { port: otel-collector.in, connector: image-provider_to_otel-collector, direction: in }
+  - { port: load-generator.otel_collector_out, connector: load-generator_to_otel-collector, direction: out }
+  - { port: otel-collector.in, connector: load-generator_to_otel-collector, direction: in }
+  - { port: load-generator.flagd_out, connector: load-generator_to_flagd, direction: out }
+  - { port: flagd.in, connector: load-generator_to_flagd, direction: in }
+  - { port: payment.otel_collector_out, connector: payment_to_otel-collector, direction: out }
+  - { port: otel-collector.in, connector: payment_to_otel-collector, direction: in }
+  - { port: payment.flagd_out, connector: payment_to_flagd, direction: out }
+  - { port: flagd.in, connector: payment_to_flagd, direction: in }
+  - { port: product-catalog.otel_collector_out, connector: product-catalog_to_otel-collector, direction: out }
+  - { port: otel-collector.in, connector: product-catalog_to_otel-collector, direction: in }
+  - { port: product-catalog.flagd_out, connector: product-catalog_to_flagd, direction: out }
+  - { port: flagd.in, connector: product-catalog_to_flagd, direction: in }
+  - { port: quote.otel_collector_out, connector: quote_to_otel-collector, direction: out }
+  - { port: otel-collector.in, connector: quote_to_otel-collector, direction: in }
+  - { port: recommendation.otel_collector_out, connector: recommendation_to_otel-collector, direction: out }
+  - { port: otel-collector.in, connector: recommendation_to_otel-collector, direction: in }
+  - { port: recommendation.flagd_out, connector: recommendation_to_flagd, direction: out }
+  - { port: flagd.in, connector: recommendation_to_flagd, direction: in }
+  - { port: shipping.otel_collector_out, connector: shipping_to_otel-collector, direction: out }
+  - { port: otel-collector.in, connector: shipping_to_otel-collector, direction: in }
+  - { port: shipping.flagd_out, connector: shipping_to_flagd, direction: out }
+  - { port: flagd.in, connector: shipping_to_flagd, direction: in }
+  - { port: flagd.otel_collector_out, connector: flagd_to_otel-collector, direction: out }
+  - { port: otel-collector.in, connector: flagd_to_otel-collector, direction: in }
+  - { port: flagd-ui.otel_collector_out, connector: flagd-ui_to_otel-collector, direction: out }
+  - { port: otel-collector.in, connector: flagd-ui_to_otel-collector, direction: in }
+  - { port: flagd-ui.flagd_out, connector: flagd-ui_to_flagd, direction: out }
+  - { port: flagd.in, connector: flagd-ui_to_flagd, direction: in }
+  - { port: frontend-proxy.flagd_ui_out, connector: frontend-proxy_to_flagd-ui, direction: out }
+  - { port: flagd-ui.in, connector: frontend-proxy_to_flagd-ui, direction: in }
+  - { port: frontend-proxy.telemetry_docs_out, connector: frontend-proxy_to_telemetry-docs, direction: out }
+  - { port: telemetry-docs.in, connector: frontend-proxy_to_telemetry-docs, direction: in }
+  - { port: load-generator.frontend_out, connector: load-generator_to_frontend, direction: out }
+  - { port: frontend.in, connector: load-generator_to_frontend, direction: in }
+  - { port: load-generator.frontend_proxy_out, connector: load-generator_to_frontend-proxy, direction: out }
+  - { port: frontend-proxy.in, connector: load-generator_to_frontend-proxy, direction: in }
+
+implementations:
+  - name: frontend-proxy-build
+    runtime: container
+  - name: frontend-build
+    runtime: container
+  - name: ad-build
+    runtime: container
+  - name: cart-build
+    runtime: container
+  - name: valkey-cart-build
+    runtime: container
+    image: "valkey"
+  - name: checkout-build
+    runtime: container
+  - name: currency-build
+    runtime: container
+  - name: email-build
+    runtime: container
+  - name: payment-build
+    runtime: container
+  - name: product-catalog-build
+    runtime: container
+  - name: astronomy-db-build
+    runtime: container
+    image: "postgres"
+  - name: quote-build
+    runtime: container
+  - name: recommendation-build
+    runtime: container
+  - name: shipping-build
+    runtime: container
+  - name: image-provider-build
+    runtime: container
+  - name: flagd-build
+    runtime: container
+  - name: flagd-ui-build
+    runtime: container
+  - name: load-generator-build
+    runtime: container
+  - name: otel-collector-build
+    runtime: container
+  - name: telemetry-docs-build
+    runtime: container

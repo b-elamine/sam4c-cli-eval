@@ -1,0 +1,14 @@
+name: c4-exposeddata-fixed
+# Fix: the data store is internal, not facing the external sphere.
+components:
+  - name: DB
+    type: Data
+    attributes: { Domain: database }
+    exposure: internal
+    persistent: true
+    storage: 10Gi
+    ports:
+      - { name: sql, number: 5432, protocol: tcp }
+connectors:
+  - name: c
+links: []

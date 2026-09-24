@@ -1,0 +1,187 @@
+# Modeled from DescartesResearch/TeaStore, examples/kubernetes/teastore-clusterip.yaml
+# (master branch, fetched 2026-07-31), plus GET_STARTED.md for the DB's persistence
+# fact and each service's documented role.
+#
+# Two provenance tiers, kept distinct: registry edges (every service -> registry)
+# are explicit in the manifest env vars. webui's edges to auth/persistence/image/
+# recommender are role-implied, not an explicit call-graph diagram -- inferred from
+# each service's documented purpose (auth "handles authentication", persistence is
+# the "database abstraction layer", image "serves product images", recommender
+# "generates recommendations"), not verified against a literal call trace. Flagged
+# here rather than presented with the same confidence as the registry edges.
+#
+# persistent = the data volume outlives the pod/container (PVC, volumeClaimTemplate,
+# hostPath, or a named compose volume). emptyDir, no volume, or an init-script-only bind
+# mount count as not persistent. Corrected 2026-09-20 against the repo manifests.
+
+name: teastore
+
+components:
+  - name: K8sCluster
+    type: Worker
+
+  - name: teastore-registry
+    type: App
+    attributes: { Domain: platform }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: registry-build
+    ports:
+      - { name: webui_in, number: 8080, protocol: http }
+      - { name: persistence_in, protocol: http }
+      - { name: auth_in, protocol: http }
+      - { name: image_in, protocol: http }
+      - { name: recommender_in, protocol: http }
+
+  - name: teastore-db
+    type: Data
+    attributes: { Domain: catalog, DataClass: product }
+    exposure: internal
+    persistent: false
+    storage: unspecified # docs confirm "persistent data storage" but not a size; not invented, left as-is
+    deployedOn: K8sCluster
+    implementation: db-build
+    ports:
+      - { name: persistence_in, number: 3306, protocol: tcp }
+
+  - name: teastore-persistence
+    type: App
+    attributes: { Domain: data }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: persistence-build
+    ports:
+      - { name: registry_out, protocol: http }
+      - { name: db_out, protocol: tcp }
+      - { name: webui_in, number: 8080, protocol: http }
+      - { name: in, protocol: http }
+
+  - name: teastore-auth
+    type: App
+    attributes: { Domain: auth }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: auth-build
+    ports:
+      - { name: registry_out, protocol: http }
+      - { name: webui_in, number: 8080, protocol: http }
+      - { name: teastore_persistence_out, protocol: http }
+
+  - name: teastore-image
+    type: App
+    attributes: { Domain: catalog }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: image-build
+    ports:
+      - { name: registry_out, protocol: http }
+      - { name: webui_in, number: 8080, protocol: http }
+      - { name: teastore_persistence_out, protocol: http }
+
+  - name: teastore-recommender
+    type: App
+    attributes: { Domain: catalog }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: recommender-build
+    ports:
+      - { name: registry_out, protocol: http }
+      - { name: webui_in, number: 8080, protocol: http }
+      - { name: teastore_persistence_out, protocol: http }
+
+  - name: teastore-webui
+    type: App
+    attributes: { Domain: frontend }
+    exposure: external
+    deployedOn: K8sCluster
+    implementation: webui-build
+    ports:
+      - { name: http_in, number: 8080, protocol: http }
+      - { name: registry_out, protocol: http }
+      - { name: auth_out, protocol: http }
+      - { name: persistence_out, protocol: http }
+      - { name: image_out, protocol: http }
+      - { name: recommender_out, protocol: http }
+
+connectors:
+  - name: Internet
+    external: true
+    protocol: http
+  - name: WebUI_to_Registry
+    protocol: http
+  - name: Persistence_to_Registry
+    protocol: http
+  - name: Auth_to_Registry
+    protocol: http
+  - name: Image_to_Registry
+    protocol: http
+  - name: Recommender_to_Registry
+    protocol: http
+  - name: Persistence_to_DB
+    protocol: tcp
+  - name: WebUI_to_Auth
+    protocol: http
+  - name: WebUI_to_Persistence
+    protocol: http
+  - name: WebUI_to_Image
+    protocol: http
+  - name: WebUI_to_Recommender
+    protocol: http
+  - name: teastore-auth_to_teastore-persistence
+    protocol: http
+  - name: teastore-image_to_teastore-persistence
+    protocol: http
+  - name: teastore-recommender_to_teastore-persistence
+    protocol: http
+
+links:
+  - { port: teastore-webui.http_in, connector: Internet, direction: in }
+  - { port: teastore-webui.registry_out, connector: WebUI_to_Registry, direction: out }
+  - { port: teastore-registry.webui_in, connector: WebUI_to_Registry, direction: in }
+  - { port: teastore-persistence.registry_out, connector: Persistence_to_Registry, direction: out }
+  - { port: teastore-registry.persistence_in, connector: Persistence_to_Registry, direction: in }
+  - { port: teastore-auth.registry_out, connector: Auth_to_Registry, direction: out }
+  - { port: teastore-registry.auth_in, connector: Auth_to_Registry, direction: in }
+  - { port: teastore-image.registry_out, connector: Image_to_Registry, direction: out }
+  - { port: teastore-registry.image_in, connector: Image_to_Registry, direction: in }
+  - { port: teastore-recommender.registry_out, connector: Recommender_to_Registry, direction: out }
+  - { port: teastore-registry.recommender_in, connector: Recommender_to_Registry, direction: in }
+  - { port: teastore-persistence.db_out, connector: Persistence_to_DB, direction: out }
+  - { port: teastore-db.persistence_in, connector: Persistence_to_DB, direction: in }
+  - { port: teastore-webui.auth_out, connector: WebUI_to_Auth, direction: out }
+  - { port: teastore-auth.webui_in, connector: WebUI_to_Auth, direction: in }
+  - { port: teastore-webui.persistence_out, connector: WebUI_to_Persistence, direction: out }
+  - { port: teastore-persistence.webui_in, connector: WebUI_to_Persistence, direction: in }
+  - { port: teastore-webui.image_out, connector: WebUI_to_Image, direction: out }
+  - { port: teastore-image.webui_in, connector: WebUI_to_Image, direction: in }
+  - { port: teastore-webui.recommender_out, connector: WebUI_to_Recommender, direction: out }
+  - { port: teastore-recommender.webui_in, connector: WebUI_to_Recommender, direction: in }
+  - { port: teastore-auth.teastore_persistence_out, connector: teastore-auth_to_teastore-persistence, direction: out }
+  - { port: teastore-persistence.in, connector: teastore-auth_to_teastore-persistence, direction: in }
+  - { port: teastore-image.teastore_persistence_out, connector: teastore-image_to_teastore-persistence, direction: out }
+  - { port: teastore-persistence.in, connector: teastore-image_to_teastore-persistence, direction: in }
+  - { port: teastore-recommender.teastore_persistence_out, connector: teastore-recommender_to_teastore-persistence, direction: out }
+  - { port: teastore-persistence.in, connector: teastore-recommender_to_teastore-persistence, direction: in }
+
+implementations:
+  - name: registry-build
+    runtime: container
+    image: "descartesresearch/teastore-registry"
+  - name: db-build
+    runtime: container
+    image: "descartesresearch/teastore-db"
+  - name: persistence-build
+    runtime: container
+    image: "descartesresearch/teastore-persistence"
+  - name: auth-build
+    runtime: container
+    image: "descartesresearch/teastore-auth"
+  - name: image-build
+    runtime: container
+    image: "descartesresearch/teastore-image"
+  - name: recommender-build
+    runtime: container
+    image: "descartesresearch/teastore-recommender"
+  - name: webui-build
+    runtime: container
+    image: "descartesresearch/teastore-webui"

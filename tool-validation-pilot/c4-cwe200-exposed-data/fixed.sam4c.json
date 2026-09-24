@@ -1,0 +1,56 @@
+{
+  "name" : "c4-exposeddata-fixed",
+  "architecture" : {
+    "name" : "c4-exposeddata-fixed",
+    "components" : [ {
+      "name" : "DB",
+      "type" : "Data",
+      "ports" : [ {
+        "name" : "sql",
+        "number" : 5432,
+        "protocol" : "tcp"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "database"
+      },
+      "properties" : {
+        "persistent" : true,
+        "storage" : "10Gi",
+        "exposure" : "internal"
+      }
+    } ],
+    "connectors" : [ {
+      "name" : "c",
+      "external" : false,
+      "protocol" : null
+    } ],
+    "links" : [ ],
+    "implementations" : [ ]
+  },
+  "security" : {
+    "attributes" : [ {
+      "name" : "Domain",
+      "values" : [ "database" ]
+    } ],
+    "contexts" : [ {
+      "name" : "dbCtx",
+      "conditions" : [ {
+        "attribute" : "Domain",
+        "value" : "database"
+      } ]
+    } ],
+    "rules" : [ ]
+  },
+  "coverage" : {
+    "dbCtx" : [ {
+      "name" : "DB",
+      "type" : "Data",
+      "attributes" : {
+        "Domain" : "database"
+      },
+      "ports" : [ "sql" ]
+    } ]
+  },
+  "resolvedRules" : [ ]
+}

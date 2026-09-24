@@ -1,0 +1,2 @@
+#attribute Domain = (database);
+#context dbCtx = (Domain=database);

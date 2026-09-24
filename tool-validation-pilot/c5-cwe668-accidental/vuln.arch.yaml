@@ -1,0 +1,14 @@
+name: c5-accidental-vuln
+# CWE-668: a workload declares exposure=internal but is wired to an EXTERNAL connector.
+components:
+  - name: Svc
+    type: App
+    attributes: { Domain: backend }
+    exposure: internal
+    ports:
+      - { name: p, number: 9000, protocol: tcp }
+connectors:
+  - name: edge
+    external: true
+links:
+  - { port: Svc.p, connector: edge, direction: in }

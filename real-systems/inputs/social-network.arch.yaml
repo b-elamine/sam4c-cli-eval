@@ -1,0 +1,598 @@
+# Modeled from delimitrou/DeathStarBench, socialNetwork/docker-compose.yml (master
+# branch, fetched 2026-07-31). Real images, real exposure (nginx-thrift 8080 and
+# media-frontend 8081 (container port 8080) are the public entry points. compose also
+# publishes host ports for post-storage-service (10002:9090, a debug mapping, modeled
+# internal like the other dev-only mappings) and jaeger-agent (16686, tracing UI; jaeger-agent's
+# 16686 is a tracing UI, not a business entry point, so jaeger-agent is modeled
+# internal). Real per-service backing stores confirmed directly from
+# compose (social-graph/post-storage/user-timeline/url-shorten/media/user each
+# have their own dedicated mongodb, several also a dedicated redis/memcached).
+#
+# Same limitation as Hotel Reservation: compose's depends_on is mostly jaeger +
+# startup ordering, not the full business call graph. The business edges below
+# (nginx-thrift as entry; compose-post-service as the documented fan-out
+# orchestrator for post creation, calling text/unique-id/user-mention/media/
+# url-shorten/post-storage/user-timeline/social-graph) follow DeathStarBench's own
+# documented, standard architecture (Gan et al., ASPLOS'19) -- not independently
+# re-verified against a call trace, same honest-provenance approach used
+# throughout this study.
+#
+# Full-manifest pass (2026-09-20): every runnable unit of the ground-truth file is now
+# modeled, none excluded. Tooling with host ports (dev UIs) is modeled internal, same
+# exposure judgment as before. Edge sources: cache edges verified in DeathStarBench source (user-memcached in
+# UserService.cpp, post-storage-memcached in PostStorageService.cpp, url-shorten-memcached
+# in UrlShortenService.cpp, home-timeline-redis in HomeTimelineService.cpp, user-timeline-redis
+# in UserTimelineService.cpp, social-graph-redis in SocialGraphService.cpp); jaeger-agent
+# edges from compose depends_on. media-memcached is deployed by compose but no
+# service code reads it (MediaHandler.h has no cache or DB calls), so it has no edge.
+#
+# persistent = the data volume outlives the pod/container (PVC, volumeClaimTemplate,
+# hostPath, or a named compose volume). emptyDir, no volume, or an init-script-only bind
+# mount count as not persistent. Corrected 2026-09-20 against the repo manifests.
+
+
+name: social-network
+
+components:
+  - name: K8sCluster
+    type: Worker
+
+  - name: nginx-thrift
+    type: App
+    attributes: { Domain: frontend }
+    exposure: external
+    deployedOn: K8sCluster
+    implementation: nginx-thrift-build
+    ports:
+      - { name: http_in, number: 8080, protocol: http }
+      - { name: post_out, protocol: http }
+      - { name: jaeger_agent_out, protocol: udp }
+      - { name: home_timeline_service_out, protocol: tcp }
+      - { name: social_graph_service_out, protocol: tcp }
+      - { name: user_service_out, protocol: tcp }
+      - { name: user_timeline_service_out, protocol: tcp }
+
+  - name: media-frontend
+    type: App
+    attributes: { Domain: frontend }
+    exposure: external
+    deployedOn: K8sCluster
+    implementation: media-frontend-build
+    ports:
+      - { name: http_in, number: 8080, protocol: http }
+      - { name: jaeger_agent_out, protocol: udp }
+      - { name: media_mongodb_out, protocol: tcp }
+
+  - name: compose-post-service
+    type: App
+    attributes: { Domain: post }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: compose-post-service-build
+    ports:
+      - { name: nginx_in, protocol: http }
+      - { name: text_out, protocol: tcp }
+      - { name: uniqueid_out, protocol: tcp }
+      - { name: media_out, protocol: tcp }
+      - { name: poststorage_out, protocol: tcp }
+      - { name: usertimeline_out, protocol: tcp }
+      - { name: user_out, protocol: tcp }
+      - { name: hometimeline_out, protocol: tcp }
+      - { name: jaeger_agent_out, protocol: udp }
+
+  - name: text-service
+    type: App
+    attributes: { Domain: post }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: text-service-build
+    ports: [{ name: post_in, protocol: tcp }, { name: jaeger_agent_out, protocol: udp }, { name: url_shorten_service_out, protocol: tcp }, { name: user_mention_service_out, protocol: tcp }]
+
+  - name: unique-id-service
+    type: App
+    attributes: { Domain: post }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: unique-id-service-build
+    ports: [{ name: post_in, protocol: tcp }, { name: jaeger_agent_out, protocol: udp }]
+
+  - name: user-mention-service
+    type: App
+    attributes: { Domain: post }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: user-mention-service-build
+    ports: [{ name: jaeger_agent_out, protocol: udp }, { name: in, protocol: tcp }, { name: user_memcached_out, protocol: tcp }, { name: user_mongodb_out, protocol: tcp }]
+
+  - name: media-service
+    type: App
+    attributes: { Domain: media }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: media-service-build
+    ports:
+      - { name: post_in, protocol: tcp }
+      - { name: jaeger_agent_out, protocol: udp }
+
+  - name: media-mongodb
+    type: Data
+    attributes: { Domain: media, DataClass: media }
+    exposure: internal
+    persistent: false
+    storage: unspecified
+    deployedOn: K8sCluster
+    implementation: media-mongodb-build
+    ports: [{ name: in, protocol: tcp }]
+
+  - name: url-shorten-service
+    type: App
+    attributes: { Domain: post }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: url-shorten-service-build
+    ports:
+      - { name: db_out, protocol: tcp }
+      - { name: url_shorten_memcached_out, protocol: tcp }
+      - { name: jaeger_agent_out, protocol: udp }
+      - { name: in, protocol: tcp }
+
+  - name: url-shorten-mongodb
+    type: Data
+    attributes: { Domain: post, DataClass: url }
+    exposure: internal
+    persistent: false
+    storage: unspecified
+    deployedOn: K8sCluster
+    implementation: url-shorten-mongodb-build
+    ports: [{ name: urlshorten_in, number: 27017, protocol: tcp }]
+
+  - name: post-storage-service
+    type: App
+    attributes: { Domain: post }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: post-storage-service-build
+    ports:
+      - { name: post_in, number: 9090, protocol: tcp }
+      - { name: db_out, protocol: tcp }
+      - { name: post_storage_memcached_out, protocol: tcp }
+      - { name: jaeger_agent_out, protocol: udp }
+      - { name: in, protocol: tcp }
+
+  - name: post-storage-mongodb
+    type: Data
+    attributes: { Domain: post, DataClass: post }
+    exposure: internal
+    persistent: false
+    storage: unspecified
+    deployedOn: K8sCluster
+    implementation: post-storage-mongodb-build
+    ports: [{ name: poststorage_in, number: 27017, protocol: tcp }]
+
+  - name: user-timeline-service
+    type: App
+    attributes: { Domain: timeline }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: user-timeline-service-build
+    ports:
+      - { name: post_in, protocol: tcp }
+      - { name: db_out, protocol: tcp }
+      - { name: user_timeline_redis_out, protocol: tcp }
+      - { name: jaeger_agent_out, protocol: udp }
+      - { name: post_storage_service_out, protocol: tcp }
+      - { name: in, protocol: tcp }
+
+  - name: user-timeline-mongodb
+    type: Data
+    attributes: { Domain: timeline, DataClass: timeline }
+    exposure: internal
+    persistent: false
+    storage: unspecified
+    deployedOn: K8sCluster
+    implementation: user-timeline-mongodb-build
+    ports: [{ name: usertimeline_in, number: 27017, protocol: tcp }]
+
+  - name: social-graph-service
+    type: App
+    attributes: { Domain: social }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: social-graph-service-build
+    ports:
+      - { name: db_out, protocol: tcp }
+      - { name: social_graph_redis_out, protocol: tcp }
+      - { name: jaeger_agent_out, protocol: udp }
+      - { name: in, protocol: tcp }
+      - { name: user_service_out, protocol: tcp }
+
+  - name: social-graph-mongodb
+    type: Data
+    attributes: { Domain: social, DataClass: social }
+    exposure: internal
+    persistent: false
+    storage: unspecified
+    deployedOn: K8sCluster
+    implementation: social-graph-mongodb-build
+    ports: [{ name: socialgraph_in, number: 27017, protocol: tcp }]
+
+  - name: user-service
+    type: App
+    attributes: { Domain: account }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: user-service-build
+    ports:
+      - { name: post_in, protocol: tcp }
+      - { name: db_out, protocol: tcp }
+      - { name: user_memcached_out, protocol: tcp }
+      - { name: jaeger_agent_out, protocol: udp }
+      - { name: in, protocol: tcp }
+      - { name: social_graph_service_out, protocol: tcp }
+
+  - name: user-mongodb
+    type: Data
+    attributes: { Domain: account, DataClass: account }
+    exposure: internal
+    persistent: false
+    storage: unspecified
+    deployedOn: K8sCluster
+    implementation: user-mongodb-build
+    ports: [{ name: user_in, number: 27017, protocol: tcp }, { name: in, protocol: tcp }]
+
+  - name: home-timeline-service
+    type: App
+    attributes: { Domain: timeline }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: home-timeline-service-build
+    ports: [{ name: post_in, protocol: tcp }, { name: home_timeline_redis_out, protocol: tcp }, { name: jaeger_agent_out, protocol: udp }, { name: post_storage_service_out, protocol: tcp }, { name: social_graph_service_out, protocol: tcp }, { name: in, protocol: tcp }]
+  - name: home-timeline-redis
+    type: Data
+    attributes: { Domain: timeline }
+    exposure: internal
+    persistent: false
+    storage: unspecified
+    deployedOn: K8sCluster
+    implementation: home-timeline-redis-build
+    ports: [{ name: in, number: 6379, protocol: tcp }]
+  - name: social-graph-redis
+    type: Data
+    attributes: { Domain: social }
+    exposure: internal
+    persistent: false
+    storage: unspecified
+    deployedOn: K8sCluster
+    implementation: social-graph-redis-build
+    ports: [{ name: in, number: 6379, protocol: tcp }]
+  - name: user-timeline-redis
+    type: Data
+    attributes: { Domain: timeline }
+    exposure: internal
+    persistent: false
+    storage: unspecified
+    deployedOn: K8sCluster
+    implementation: user-timeline-redis-build
+    ports: [{ name: in, number: 6379, protocol: tcp }]
+  - name: media-memcached
+    type: Data
+    attributes: { Domain: media }
+    exposure: internal
+    persistent: false
+    storage: unspecified
+    deployedOn: K8sCluster
+    implementation: media-memcached-build
+    ports: [{ name: in, number: 11211, protocol: tcp }]
+  - name: post-storage-memcached
+    type: Data
+    attributes: { Domain: post }
+    exposure: internal
+    persistent: false
+    storage: unspecified
+    deployedOn: K8sCluster
+    implementation: post-storage-memcached-build
+    ports: [{ name: in, number: 11211, protocol: tcp }]
+  - name: url-shorten-memcached
+    type: Data
+    attributes: { Domain: post }
+    exposure: internal
+    persistent: false
+    storage: unspecified
+    deployedOn: K8sCluster
+    implementation: url-shorten-memcached-build
+    ports: [{ name: in, number: 11211, protocol: tcp }]
+  - name: user-memcached
+    type: Data
+    attributes: { Domain: account }
+    exposure: internal
+    persistent: false
+    storage: unspecified
+    deployedOn: K8sCluster
+    implementation: user-memcached-build
+    ports: [{ name: in, number: 11211, protocol: tcp }]
+  - name: jaeger-agent
+    type: App
+    attributes: { Domain: observability }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: jaeger-agent-build
+    ports: [{ name: in, number: 6831, protocol: udp }]
+
+connectors:
+  - name: Internet
+    external: true
+    protocol: http
+  - name: MediaInternet
+    external: true
+    protocol: http
+  - name: Nginx_to_Post
+    protocol: http
+  - name: Post_to_Text
+    protocol: tcp
+  - name: Post_to_UniqueId
+    protocol: tcp
+  - name: Post_to_Media
+    protocol: tcp
+  - name: Post_to_PostStorage
+    protocol: tcp
+  - name: Post_to_UserTimeline
+    protocol: tcp
+  - name: Post_to_User
+    protocol: tcp
+  - name: Post_to_HomeTimeline
+    protocol: tcp
+  - name: UrlShorten_to_DB
+    protocol: tcp
+  - name: PostStorage_to_DB
+    protocol: tcp
+  - name: UserTimeline_to_DB
+    protocol: tcp
+  - name: SocialGraph_to_DB
+    protocol: tcp
+  - name: User_to_DB
+    protocol: tcp
+  - name: home-timeline-service_to_home-timeline-redis
+    protocol: tcp
+  - name: social-graph-service_to_social-graph-redis
+    protocol: tcp
+  - name: user-timeline-service_to_user-timeline-redis
+    protocol: tcp
+  - name: post-storage-service_to_post-storage-memcached
+    protocol: tcp
+  - name: url-shorten-service_to_url-shorten-memcached
+    protocol: tcp
+  - name: user-service_to_user-memcached
+    protocol: tcp
+  - name: social-graph-service_to_jaeger-agent
+    protocol: udp
+  - name: compose-post-service_to_jaeger-agent
+    protocol: udp
+  - name: post-storage-service_to_jaeger-agent
+    protocol: udp
+  - name: user-timeline-service_to_jaeger-agent
+    protocol: udp
+  - name: url-shorten-service_to_jaeger-agent
+    protocol: udp
+  - name: user-service_to_jaeger-agent
+    protocol: udp
+  - name: media-service_to_jaeger-agent
+    protocol: udp
+  - name: text-service_to_jaeger-agent
+    protocol: udp
+  - name: unique-id-service_to_jaeger-agent
+    protocol: udp
+  - name: user-mention-service_to_jaeger-agent
+    protocol: udp
+  - name: home-timeline-service_to_jaeger-agent
+    protocol: udp
+  - name: nginx-thrift_to_jaeger-agent
+    protocol: udp
+  - name: media-frontend_to_jaeger-agent
+    protocol: udp
+  - name: home-timeline-service_to_post-storage-service
+    protocol: tcp
+  - name: home-timeline-service_to_social-graph-service
+    protocol: tcp
+  - name: social-graph-service_to_user-service
+    protocol: tcp
+  - name: text-service_to_url-shorten-service
+    protocol: tcp
+  - name: text-service_to_user-mention-service
+    protocol: tcp
+  - name: user-mention-service_to_user-memcached
+    protocol: tcp
+  - name: user-mention-service_to_user-mongodb
+    protocol: tcp
+  - name: user-service_to_social-graph-service
+    protocol: tcp
+  - name: user-timeline-service_to_post-storage-service
+    protocol: tcp
+  - name: nginx-thrift_to_home-timeline-service
+    protocol: tcp
+  - name: nginx-thrift_to_social-graph-service
+    protocol: tcp
+  - name: nginx-thrift_to_user-service
+    protocol: tcp
+  - name: nginx-thrift_to_user-timeline-service
+    protocol: tcp
+  - name: media-frontend_to_media-mongodb
+    protocol: tcp
+
+links:
+  - { port: nginx-thrift.http_in, connector: Internet, direction: in }
+  - { port: media-frontend.http_in, connector: MediaInternet, direction: in }
+  - { port: nginx-thrift.post_out, connector: Nginx_to_Post, direction: out }
+  - { port: compose-post-service.nginx_in, connector: Nginx_to_Post, direction: in }
+  - { port: compose-post-service.text_out, connector: Post_to_Text, direction: out }
+  - { port: text-service.post_in, connector: Post_to_Text, direction: in }
+  - { port: compose-post-service.uniqueid_out, connector: Post_to_UniqueId, direction: out }
+  - { port: unique-id-service.post_in, connector: Post_to_UniqueId, direction: in }
+  - { port: compose-post-service.media_out, connector: Post_to_Media, direction: out }
+  - { port: media-service.post_in, connector: Post_to_Media, direction: in }
+  - { port: compose-post-service.poststorage_out, connector: Post_to_PostStorage, direction: out }
+  - { port: post-storage-service.post_in, connector: Post_to_PostStorage, direction: in }
+  - { port: compose-post-service.usertimeline_out, connector: Post_to_UserTimeline, direction: out }
+  - { port: user-timeline-service.post_in, connector: Post_to_UserTimeline, direction: in }
+  - { port: compose-post-service.user_out, connector: Post_to_User, direction: out }
+  - { port: user-service.post_in, connector: Post_to_User, direction: in }
+  - { port: compose-post-service.hometimeline_out, connector: Post_to_HomeTimeline, direction: out }
+  - { port: home-timeline-service.post_in, connector: Post_to_HomeTimeline, direction: in }
+  - { port: url-shorten-service.db_out, connector: UrlShorten_to_DB, direction: out }
+  - { port: url-shorten-mongodb.urlshorten_in, connector: UrlShorten_to_DB, direction: in }
+  - { port: post-storage-service.db_out, connector: PostStorage_to_DB, direction: out }
+  - { port: post-storage-mongodb.poststorage_in, connector: PostStorage_to_DB, direction: in }
+  - { port: user-timeline-service.db_out, connector: UserTimeline_to_DB, direction: out }
+  - { port: user-timeline-mongodb.usertimeline_in, connector: UserTimeline_to_DB, direction: in }
+  - { port: social-graph-service.db_out, connector: SocialGraph_to_DB, direction: out }
+  - { port: social-graph-mongodb.socialgraph_in, connector: SocialGraph_to_DB, direction: in }
+  - { port: user-service.db_out, connector: User_to_DB, direction: out }
+  - { port: user-mongodb.user_in, connector: User_to_DB, direction: in }
+  - { port: home-timeline-service.home_timeline_redis_out, connector: home-timeline-service_to_home-timeline-redis, direction: out }
+  - { port: home-timeline-redis.in, connector: home-timeline-service_to_home-timeline-redis, direction: in }
+  - { port: social-graph-service.social_graph_redis_out, connector: social-graph-service_to_social-graph-redis, direction: out }
+  - { port: social-graph-redis.in, connector: social-graph-service_to_social-graph-redis, direction: in }
+  - { port: user-timeline-service.user_timeline_redis_out, connector: user-timeline-service_to_user-timeline-redis, direction: out }
+  - { port: user-timeline-redis.in, connector: user-timeline-service_to_user-timeline-redis, direction: in }
+  - { port: post-storage-service.post_storage_memcached_out, connector: post-storage-service_to_post-storage-memcached, direction: out }
+  - { port: post-storage-memcached.in, connector: post-storage-service_to_post-storage-memcached, direction: in }
+  - { port: url-shorten-service.url_shorten_memcached_out, connector: url-shorten-service_to_url-shorten-memcached, direction: out }
+  - { port: url-shorten-memcached.in, connector: url-shorten-service_to_url-shorten-memcached, direction: in }
+  - { port: user-service.user_memcached_out, connector: user-service_to_user-memcached, direction: out }
+  - { port: user-memcached.in, connector: user-service_to_user-memcached, direction: in }
+  - { port: social-graph-service.jaeger_agent_out, connector: social-graph-service_to_jaeger-agent, direction: out }
+  - { port: jaeger-agent.in, connector: social-graph-service_to_jaeger-agent, direction: in }
+  - { port: compose-post-service.jaeger_agent_out, connector: compose-post-service_to_jaeger-agent, direction: out }
+  - { port: jaeger-agent.in, connector: compose-post-service_to_jaeger-agent, direction: in }
+  - { port: post-storage-service.jaeger_agent_out, connector: post-storage-service_to_jaeger-agent, direction: out }
+  - { port: jaeger-agent.in, connector: post-storage-service_to_jaeger-agent, direction: in }
+  - { port: user-timeline-service.jaeger_agent_out, connector: user-timeline-service_to_jaeger-agent, direction: out }
+  - { port: jaeger-agent.in, connector: user-timeline-service_to_jaeger-agent, direction: in }
+  - { port: url-shorten-service.jaeger_agent_out, connector: url-shorten-service_to_jaeger-agent, direction: out }
+  - { port: jaeger-agent.in, connector: url-shorten-service_to_jaeger-agent, direction: in }
+  - { port: user-service.jaeger_agent_out, connector: user-service_to_jaeger-agent, direction: out }
+  - { port: jaeger-agent.in, connector: user-service_to_jaeger-agent, direction: in }
+  - { port: media-service.jaeger_agent_out, connector: media-service_to_jaeger-agent, direction: out }
+  - { port: jaeger-agent.in, connector: media-service_to_jaeger-agent, direction: in }
+  - { port: text-service.jaeger_agent_out, connector: text-service_to_jaeger-agent, direction: out }
+  - { port: jaeger-agent.in, connector: text-service_to_jaeger-agent, direction: in }
+  - { port: unique-id-service.jaeger_agent_out, connector: unique-id-service_to_jaeger-agent, direction: out }
+  - { port: jaeger-agent.in, connector: unique-id-service_to_jaeger-agent, direction: in }
+  - { port: user-mention-service.jaeger_agent_out, connector: user-mention-service_to_jaeger-agent, direction: out }
+  - { port: jaeger-agent.in, connector: user-mention-service_to_jaeger-agent, direction: in }
+  - { port: home-timeline-service.jaeger_agent_out, connector: home-timeline-service_to_jaeger-agent, direction: out }
+  - { port: jaeger-agent.in, connector: home-timeline-service_to_jaeger-agent, direction: in }
+  - { port: nginx-thrift.jaeger_agent_out, connector: nginx-thrift_to_jaeger-agent, direction: out }
+  - { port: jaeger-agent.in, connector: nginx-thrift_to_jaeger-agent, direction: in }
+  - { port: media-frontend.jaeger_agent_out, connector: media-frontend_to_jaeger-agent, direction: out }
+  - { port: jaeger-agent.in, connector: media-frontend_to_jaeger-agent, direction: in }
+  - { port: home-timeline-service.post_storage_service_out, connector: home-timeline-service_to_post-storage-service, direction: out }
+  - { port: post-storage-service.in, connector: home-timeline-service_to_post-storage-service, direction: in }
+  - { port: home-timeline-service.social_graph_service_out, connector: home-timeline-service_to_social-graph-service, direction: out }
+  - { port: social-graph-service.in, connector: home-timeline-service_to_social-graph-service, direction: in }
+  - { port: social-graph-service.user_service_out, connector: social-graph-service_to_user-service, direction: out }
+  - { port: user-service.in, connector: social-graph-service_to_user-service, direction: in }
+  - { port: text-service.url_shorten_service_out, connector: text-service_to_url-shorten-service, direction: out }
+  - { port: url-shorten-service.in, connector: text-service_to_url-shorten-service, direction: in }
+  - { port: text-service.user_mention_service_out, connector: text-service_to_user-mention-service, direction: out }
+  - { port: user-mention-service.in, connector: text-service_to_user-mention-service, direction: in }
+  - { port: user-mention-service.user_memcached_out, connector: user-mention-service_to_user-memcached, direction: out }
+  - { port: user-memcached.in, connector: user-mention-service_to_user-memcached, direction: in }
+  - { port: user-mention-service.user_mongodb_out, connector: user-mention-service_to_user-mongodb, direction: out }
+  - { port: user-mongodb.in, connector: user-mention-service_to_user-mongodb, direction: in }
+  - { port: user-service.social_graph_service_out, connector: user-service_to_social-graph-service, direction: out }
+  - { port: social-graph-service.in, connector: user-service_to_social-graph-service, direction: in }
+  - { port: user-timeline-service.post_storage_service_out, connector: user-timeline-service_to_post-storage-service, direction: out }
+  - { port: post-storage-service.in, connector: user-timeline-service_to_post-storage-service, direction: in }
+  - { port: nginx-thrift.home_timeline_service_out, connector: nginx-thrift_to_home-timeline-service, direction: out }
+  - { port: home-timeline-service.in, connector: nginx-thrift_to_home-timeline-service, direction: in }
+  - { port: nginx-thrift.social_graph_service_out, connector: nginx-thrift_to_social-graph-service, direction: out }
+  - { port: social-graph-service.in, connector: nginx-thrift_to_social-graph-service, direction: in }
+  - { port: nginx-thrift.user_service_out, connector: nginx-thrift_to_user-service, direction: out }
+  - { port: user-service.in, connector: nginx-thrift_to_user-service, direction: in }
+  - { port: nginx-thrift.user_timeline_service_out, connector: nginx-thrift_to_user-timeline-service, direction: out }
+  - { port: user-timeline-service.in, connector: nginx-thrift_to_user-timeline-service, direction: in }
+  - { port: media-frontend.media_mongodb_out, connector: media-frontend_to_media-mongodb, direction: out }
+  - { port: media-mongodb.in, connector: media-frontend_to_media-mongodb, direction: in }
+
+implementations:
+  - name: nginx-thrift-build
+    runtime: container
+    image: "yg397/openresty-thrift:xenial"
+  - name: media-frontend-build
+    runtime: container
+    image: "yg397/media-frontend:xenial"
+  - name: compose-post-service-build
+    runtime: container
+    image: "deathstarbench/social-network-microservices:latest"
+  - name: text-service-build
+    runtime: container
+    image: "deathstarbench/social-network-microservices:latest"
+  - name: unique-id-service-build
+    runtime: container
+    image: "deathstarbench/social-network-microservices:latest"
+  - name: user-mention-service-build
+    runtime: container
+    image: "deathstarbench/social-network-microservices:latest"
+  - name: media-service-build
+    runtime: container
+    image: "deathstarbench/social-network-microservices:latest"
+  - name: media-mongodb-build
+    runtime: container
+    image: "mongo:4.4.6"
+  - name: url-shorten-service-build
+    runtime: container
+    image: "deathstarbench/social-network-microservices:latest"
+  - name: url-shorten-mongodb-build
+    runtime: container
+    image: "mongo:4.4.6"
+  - name: post-storage-service-build
+    runtime: container
+    image: "deathstarbench/social-network-microservices:latest"
+  - name: post-storage-mongodb-build
+    runtime: container
+    image: "mongo:4.4.6"
+  - name: user-timeline-service-build
+    runtime: container
+    image: "deathstarbench/social-network-microservices:latest"
+  - name: user-timeline-mongodb-build
+    runtime: container
+    image: "mongo:4.4.6"
+  - name: social-graph-service-build
+    runtime: container
+    image: "deathstarbench/social-network-microservices:latest"
+  - name: social-graph-mongodb-build
+    runtime: container
+    image: "mongo:4.4.6"
+  - name: user-service-build
+    runtime: container
+    image: "deathstarbench/social-network-microservices:latest"
+  - name: user-mongodb-build
+    runtime: container
+    image: "mongo:4.4.6"
+  - name: home-timeline-service-build
+    runtime: container
+    image: "deathstarbench/social-network-microservices:latest"
+  - name: home-timeline-redis-build
+    runtime: container
+    image: "redis"
+  - name: social-graph-redis-build
+    runtime: container
+    image: "redis"
+  - name: user-timeline-redis-build
+    runtime: container
+    image: "redis"
+  - name: media-memcached-build
+    runtime: container
+    image: "memcached"
+  - name: post-storage-memcached-build
+    runtime: container
+    image: "memcached"
+  - name: url-shorten-memcached-build
+    runtime: container
+    image: "memcached"
+  - name: user-memcached-build
+    runtime: container
+    image: "memcached"
+  - name: jaeger-agent-build
+    runtime: container
+    image: "jaegertracing/all-in-one:latest"

@@ -1,0 +1,213 @@
+# Modeled from GoogleCloudPlatform/bank-of-anthos, kubernetes-manifests/ (main
+# branch, fetched 2026-07-31). frontend's 5 outbound edges are fully explicit
+# (service-api-config ConfigMap: TRANSACTIONS_API_ADDR, BALANCES_API_ADDR,
+# HISTORY_API_ADDR, CONTACTS_API_ADDR, USERSERVICE_API_ADDR). userservice ->
+# accounts-db is explicit (accounts-db-config ConfigMap via envFrom, confirmed).
+# ledgerwriter/balancereader/transactionhistory -> ledger-db and contacts ->
+# accounts-db are inferred from the same naming/config-map convention confirmed
+# for userservice, not independently re-verified per service -- flagged as such.
+# Real JWT authentication confirmed: userservice signs tokens (mounted RS256 key
+# pair, TOKEN_EXPIRY_SECONDS=3600). loadgenerator excluded (test traffic
+# generator, same convention as the other systems in this study).
+#
+# Full-manifest pass (2026-09-20): loadgenerator (previously excluded as test traffic) is
+# now modeled, Domain observability, edge to frontend from its FRONTEND_ADDR env var
+# (frontend:80). The stored real-manifests/bank-of-anthos.yaml is now the concatenation
+# of the repo's kubernetes-manifests/*.yaml (9 workloads), so the ground truth is complete.
+#
+# persistent = the data volume outlives the pod/container (PVC, volumeClaimTemplate,
+# hostPath, or a named compose volume). emptyDir, no volume, or an init-script-only bind
+# mount count as not persistent. Corrected 2026-09-20 against the repo manifests.
+#
+# credentials: jwt-key is the RS256 key pair secret. kubernetes-manifests mount `jwt-key` in userservice
+# (signs), frontend, contacts, ledger-writer, balance-reader and transaction-history (verify).
+# The tool counts a component that shares a credential with the authenticator as verifying it.
+
+name: bank-of-anthos
+
+components:
+  - name: K8sCluster
+    type: Worker
+
+  - name: frontend
+    type: App
+    attributes: { Domain: frontend }
+    exposure: external
+    deployedOn: K8sCluster
+    credentials: [jwt-key]
+    implementation: frontend-build
+    ports:
+      - { name: http_in, number: 8080, protocol: http }
+      - { name: ledgerwriter_out, protocol: http }
+      - { name: balancereader_out, protocol: http }
+      - { name: transactionhistory_out, protocol: http }
+      - { name: contacts_out, protocol: http }
+      - { name: userservice_out, protocol: http }
+      - { name: in, protocol: http }
+
+  - name: userservice
+    type: App
+    attributes: { Domain: accounts, Mechanism: jwt }
+    exposure: internal
+    deployedOn: K8sCluster
+    credentials: [jwt-key]
+    implementation: userservice-build
+    ports:
+      - { name: fe_in, number: 8080, protocol: http }
+      - { name: db_out, protocol: tcp }
+
+  - name: contacts
+    type: App
+    attributes: { Domain: accounts }
+    exposure: internal
+    deployedOn: K8sCluster
+    credentials: [jwt-key]
+    implementation: contacts-build
+    ports:
+      - { name: fe_in, number: 8080, protocol: http }
+      - { name: db_out, protocol: tcp }
+
+  - name: accounts-db
+    type: Data
+    attributes: { Domain: accounts, DataClass: account }
+    exposure: internal
+    persistent: false
+    storage: unspecified
+    deployedOn: K8sCluster
+    implementation: accounts-db-build
+    ports:
+      - { name: userservice_in, number: 5432, protocol: tcp }
+      - { name: contacts_in, protocol: tcp }
+
+  - name: ledgerwriter
+    type: App
+    attributes: { Domain: ledger }
+    exposure: internal
+    deployedOn: K8sCluster
+    credentials: [jwt-key]
+    implementation: ledgerwriter-build
+    ports:
+      - { name: fe_in, number: 8080, protocol: http }
+      - { name: db_out, protocol: tcp }
+      - { name: balancereader_out, protocol: http }
+
+  - name: balancereader
+    type: App
+    attributes: { Domain: ledger }
+    exposure: internal
+    deployedOn: K8sCluster
+    credentials: [jwt-key]
+    implementation: balancereader-build
+    ports:
+      - { name: fe_in, number: 8080, protocol: http }
+      - { name: db_out, protocol: tcp }
+      - { name: in, protocol: http }
+
+  - name: transactionhistory
+    type: App
+    attributes: { Domain: ledger }
+    exposure: internal
+    deployedOn: K8sCluster
+    credentials: [jwt-key]
+    implementation: transactionhistory-build
+    ports:
+      - { name: fe_in, number: 8080, protocol: http }
+      - { name: db_out, protocol: tcp }
+
+  - name: ledger-db
+    type: Data
+    attributes: { Domain: ledger, DataClass: transaction }
+    exposure: internal
+    persistent: false
+    storage: unspecified
+    deployedOn: K8sCluster
+    implementation: ledger-db-build
+    ports:
+      - { name: ledgerwriter_in, number: 5432, protocol: tcp }
+      - { name: balancereader_in, protocol: tcp }
+      - { name: transactionhistory_in, protocol: tcp }
+  - name: loadgenerator
+    type: App
+    attributes: { Domain: observability }
+    exposure: internal
+    deployedOn: K8sCluster
+    implementation: loadgenerator-build
+    ports: [{ name: frontend_out, protocol: http }]
+
+connectors:
+  - name: Internet
+    external: true
+    protocol: http
+  - name: FE_to_LedgerWriter
+    protocol: http
+  - name: FE_to_BalanceReader
+    protocol: http
+  - name: FE_to_TransactionHistory
+    protocol: http
+  - name: FE_to_Contacts
+    protocol: http
+  - name: FE_to_UserService
+    protocol: http
+  - name: UserService_to_AccountsDB
+    protocol: tcp
+  - name: Contacts_to_AccountsDB
+    protocol: tcp
+  - name: LedgerWriter_to_LedgerDB
+    protocol: tcp
+  - name: BalanceReader_to_LedgerDB
+    protocol: tcp
+  - name: TransactionHistory_to_LedgerDB
+    protocol: tcp
+  - name: loadgenerator_to_frontend
+    protocol: http
+  - name: ledgerwriter_to_balancereader
+    protocol: http
+
+links:
+  - { port: frontend.http_in, connector: Internet, direction: in }
+  - { port: frontend.ledgerwriter_out, connector: FE_to_LedgerWriter, direction: out }
+  - { port: ledgerwriter.fe_in, connector: FE_to_LedgerWriter, direction: in }
+  - { port: frontend.balancereader_out, connector: FE_to_BalanceReader, direction: out }
+  - { port: balancereader.fe_in, connector: FE_to_BalanceReader, direction: in }
+  - { port: frontend.transactionhistory_out, connector: FE_to_TransactionHistory, direction: out }
+  - { port: transactionhistory.fe_in, connector: FE_to_TransactionHistory, direction: in }
+  - { port: frontend.contacts_out, connector: FE_to_Contacts, direction: out }
+  - { port: contacts.fe_in, connector: FE_to_Contacts, direction: in }
+  - { port: frontend.userservice_out, connector: FE_to_UserService, direction: out }
+  - { port: userservice.fe_in, connector: FE_to_UserService, direction: in }
+  - { port: userservice.db_out, connector: UserService_to_AccountsDB, direction: out }
+  - { port: accounts-db.userservice_in, connector: UserService_to_AccountsDB, direction: in }
+  - { port: contacts.db_out, connector: Contacts_to_AccountsDB, direction: out }
+  - { port: accounts-db.contacts_in, connector: Contacts_to_AccountsDB, direction: in }
+  - { port: ledgerwriter.db_out, connector: LedgerWriter_to_LedgerDB, direction: out }
+  - { port: ledger-db.ledgerwriter_in, connector: LedgerWriter_to_LedgerDB, direction: in }
+  - { port: balancereader.db_out, connector: BalanceReader_to_LedgerDB, direction: out }
+  - { port: ledger-db.balancereader_in, connector: BalanceReader_to_LedgerDB, direction: in }
+  - { port: transactionhistory.db_out, connector: TransactionHistory_to_LedgerDB, direction: out }
+  - { port: ledger-db.transactionhistory_in, connector: TransactionHistory_to_LedgerDB, direction: in }
+  - { port: loadgenerator.frontend_out, connector: loadgenerator_to_frontend, direction: out }
+  - { port: frontend.in, connector: loadgenerator_to_frontend, direction: in }
+  - { port: ledgerwriter.balancereader_out, connector: ledgerwriter_to_balancereader, direction: out }
+  - { port: balancereader.in, connector: ledgerwriter_to_balancereader, direction: in }
+
+implementations:
+  - name: frontend-build
+    runtime: container
+  - name: userservice-build
+    runtime: container
+  - name: contacts-build
+    runtime: container
+  - name: accounts-db-build
+    runtime: container
+    image: "postgres"
+  - name: ledgerwriter-build
+    runtime: container
+  - name: balancereader-build
+    runtime: container
+  - name: transactionhistory-build
+    runtime: container
+  - name: ledger-db-build
+    runtime: container
+    image: "postgres"
+  - name: loadgenerator-build
+    runtime: container

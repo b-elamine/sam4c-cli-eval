@@ -1,0 +1,817 @@
+{
+  "name" : "online-boutique",
+  "architecture" : {
+    "name" : "online-boutique",
+    "components" : [ {
+      "name" : "K8sCluster",
+      "type" : "Worker",
+      "ports" : [ ],
+      "members" : [ ],
+      "attributes" : { },
+      "properties" : { }
+    }, {
+      "name" : "frontend",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "http_in",
+        "number" : 8080,
+        "protocol" : "http"
+      }, {
+        "name" : "in",
+        "number" : null,
+        "protocol" : "http"
+      }, {
+        "name" : "productcatalog_out",
+        "number" : null,
+        "protocol" : "http"
+      }, {
+        "name" : "currency_out",
+        "number" : null,
+        "protocol" : "http"
+      }, {
+        "name" : "cart_out",
+        "number" : null,
+        "protocol" : "http"
+      }, {
+        "name" : "recommendation_out",
+        "number" : null,
+        "protocol" : "http"
+      }, {
+        "name" : "shipping_out",
+        "number" : null,
+        "protocol" : "http"
+      }, {
+        "name" : "checkout_out",
+        "number" : null,
+        "protocol" : "http"
+      }, {
+        "name" : "ad_out",
+        "number" : null,
+        "protocol" : "http"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "frontend"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "frontend-build",
+        "exposure" : "external"
+      }
+    }, {
+      "name" : "adservice",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "fe_in",
+        "number" : 9555,
+        "protocol" : "grpc"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "ads"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "adservice-build",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "currencyservice",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "fe_in",
+        "number" : 7000,
+        "protocol" : "grpc"
+      }, {
+        "name" : "checkout_in",
+        "number" : null,
+        "protocol" : "grpc"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "currency"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "currencyservice-build",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "cartservice",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "fe_in",
+        "number" : 7070,
+        "protocol" : "grpc"
+      }, {
+        "name" : "checkout_in",
+        "number" : null,
+        "protocol" : "grpc"
+      }, {
+        "name" : "redis_out",
+        "number" : null,
+        "protocol" : "tcp"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "cart"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "cartservice-build",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "redis-cart",
+      "type" : "Data",
+      "ports" : [ {
+        "name" : "cart_in",
+        "number" : 6379,
+        "protocol" : "tcp"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "cart",
+        "DataClass" : "session"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "redis-cart-build",
+        "persistent" : false,
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "recommendationservice",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "fe_in",
+        "number" : 8080,
+        "protocol" : "grpc"
+      }, {
+        "name" : "productcatalog_out",
+        "number" : null,
+        "protocol" : "grpc"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "recommendation"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "recommendationservice-build",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "checkoutservice",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "fe_in",
+        "number" : 5050,
+        "protocol" : "grpc"
+      }, {
+        "name" : "productcatalog_out",
+        "number" : null,
+        "protocol" : "grpc"
+      }, {
+        "name" : "shipping_out",
+        "number" : null,
+        "protocol" : "grpc"
+      }, {
+        "name" : "payment_out",
+        "number" : null,
+        "protocol" : "grpc"
+      }, {
+        "name" : "email_out",
+        "number" : null,
+        "protocol" : "grpc"
+      }, {
+        "name" : "currency_out",
+        "number" : null,
+        "protocol" : "grpc"
+      }, {
+        "name" : "cart_out",
+        "number" : null,
+        "protocol" : "grpc"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "checkout"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "checkoutservice-build",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "emailservice",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "checkout_in",
+        "number" : 8080,
+        "protocol" : "http"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "email"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "emailservice-build",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "paymentservice",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "checkout_in",
+        "number" : 50051,
+        "protocol" : "grpc"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "payment"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "paymentservice-build",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "shippingservice",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "fe_in",
+        "number" : 50051,
+        "protocol" : "grpc"
+      }, {
+        "name" : "checkout_in",
+        "number" : null,
+        "protocol" : "grpc"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "shipping"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "shippingservice-build",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "productcatalogservice",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "fe_in",
+        "number" : 3550,
+        "protocol" : "grpc"
+      }, {
+        "name" : "recommendation_in",
+        "number" : null,
+        "protocol" : "grpc"
+      }, {
+        "name" : "checkout_in",
+        "number" : null,
+        "protocol" : "grpc"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "catalog"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "productcatalogservice-build",
+        "exposure" : "internal"
+      }
+    }, {
+      "name" : "loadgenerator",
+      "type" : "App",
+      "ports" : [ {
+        "name" : "frontend_out",
+        "number" : null,
+        "protocol" : "http"
+      } ],
+      "members" : [ ],
+      "attributes" : {
+        "Domain" : "observability"
+      },
+      "properties" : {
+        "deployedOn" : "K8sCluster",
+        "implementation" : "loadgenerator-build",
+        "exposure" : "internal"
+      }
+    } ],
+    "connectors" : [ {
+      "name" : "Internet",
+      "external" : true,
+      "protocol" : "http"
+    }, {
+      "name" : "FE_to_Ad",
+      "external" : false,
+      "protocol" : "grpc"
+    }, {
+      "name" : "FE_to_Currency",
+      "external" : false,
+      "protocol" : "grpc"
+    }, {
+      "name" : "FE_to_Cart",
+      "external" : false,
+      "protocol" : "grpc"
+    }, {
+      "name" : "FE_to_Recommendation",
+      "external" : false,
+      "protocol" : "grpc"
+    }, {
+      "name" : "FE_to_Shipping",
+      "external" : false,
+      "protocol" : "grpc"
+    }, {
+      "name" : "FE_to_Checkout",
+      "external" : false,
+      "protocol" : "grpc"
+    }, {
+      "name" : "FE_to_ProductCatalog",
+      "external" : false,
+      "protocol" : "grpc"
+    }, {
+      "name" : "Cart_to_Redis",
+      "external" : false,
+      "protocol" : "tcp"
+    }, {
+      "name" : "Recommendation_to_ProductCatalog",
+      "external" : false,
+      "protocol" : "grpc"
+    }, {
+      "name" : "Checkout_to_ProductCatalog",
+      "external" : false,
+      "protocol" : "grpc"
+    }, {
+      "name" : "Checkout_to_Shipping",
+      "external" : false,
+      "protocol" : "grpc"
+    }, {
+      "name" : "Checkout_to_Payment",
+      "external" : false,
+      "protocol" : "grpc"
+    }, {
+      "name" : "Checkout_to_Email",
+      "external" : false,
+      "protocol" : "http"
+    }, {
+      "name" : "Checkout_to_Currency",
+      "external" : false,
+      "protocol" : "grpc"
+    }, {
+      "name" : "Checkout_to_Cart",
+      "external" : false,
+      "protocol" : "grpc"
+    }, {
+      "name" : "loadgenerator_to_frontend",
+      "external" : false,
+      "protocol" : "http"
+    } ],
+    "links" : [ {
+      "portRef" : "frontend.http_in",
+      "connectorName" : "Internet",
+      "direction" : "IN"
+    }, {
+      "portRef" : "frontend.ad_out",
+      "connectorName" : "FE_to_Ad",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "adservice.fe_in",
+      "connectorName" : "FE_to_Ad",
+      "direction" : "IN"
+    }, {
+      "portRef" : "frontend.currency_out",
+      "connectorName" : "FE_to_Currency",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "currencyservice.fe_in",
+      "connectorName" : "FE_to_Currency",
+      "direction" : "IN"
+    }, {
+      "portRef" : "frontend.cart_out",
+      "connectorName" : "FE_to_Cart",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "cartservice.fe_in",
+      "connectorName" : "FE_to_Cart",
+      "direction" : "IN"
+    }, {
+      "portRef" : "frontend.recommendation_out",
+      "connectorName" : "FE_to_Recommendation",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "recommendationservice.fe_in",
+      "connectorName" : "FE_to_Recommendation",
+      "direction" : "IN"
+    }, {
+      "portRef" : "frontend.shipping_out",
+      "connectorName" : "FE_to_Shipping",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "shippingservice.fe_in",
+      "connectorName" : "FE_to_Shipping",
+      "direction" : "IN"
+    }, {
+      "portRef" : "frontend.checkout_out",
+      "connectorName" : "FE_to_Checkout",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "checkoutservice.fe_in",
+      "connectorName" : "FE_to_Checkout",
+      "direction" : "IN"
+    }, {
+      "portRef" : "frontend.productcatalog_out",
+      "connectorName" : "FE_to_ProductCatalog",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "productcatalogservice.fe_in",
+      "connectorName" : "FE_to_ProductCatalog",
+      "direction" : "IN"
+    }, {
+      "portRef" : "cartservice.redis_out",
+      "connectorName" : "Cart_to_Redis",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "redis-cart.cart_in",
+      "connectorName" : "Cart_to_Redis",
+      "direction" : "IN"
+    }, {
+      "portRef" : "recommendationservice.productcatalog_out",
+      "connectorName" : "Recommendation_to_ProductCatalog",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "productcatalogservice.recommendation_in",
+      "connectorName" : "Recommendation_to_ProductCatalog",
+      "direction" : "IN"
+    }, {
+      "portRef" : "checkoutservice.productcatalog_out",
+      "connectorName" : "Checkout_to_ProductCatalog",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "productcatalogservice.checkout_in",
+      "connectorName" : "Checkout_to_ProductCatalog",
+      "direction" : "IN"
+    }, {
+      "portRef" : "checkoutservice.shipping_out",
+      "connectorName" : "Checkout_to_Shipping",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "shippingservice.checkout_in",
+      "connectorName" : "Checkout_to_Shipping",
+      "direction" : "IN"
+    }, {
+      "portRef" : "checkoutservice.payment_out",
+      "connectorName" : "Checkout_to_Payment",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "paymentservice.checkout_in",
+      "connectorName" : "Checkout_to_Payment",
+      "direction" : "IN"
+    }, {
+      "portRef" : "checkoutservice.email_out",
+      "connectorName" : "Checkout_to_Email",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "emailservice.checkout_in",
+      "connectorName" : "Checkout_to_Email",
+      "direction" : "IN"
+    }, {
+      "portRef" : "checkoutservice.currency_out",
+      "connectorName" : "Checkout_to_Currency",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "currencyservice.checkout_in",
+      "connectorName" : "Checkout_to_Currency",
+      "direction" : "IN"
+    }, {
+      "portRef" : "checkoutservice.cart_out",
+      "connectorName" : "Checkout_to_Cart",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "cartservice.checkout_in",
+      "connectorName" : "Checkout_to_Cart",
+      "direction" : "IN"
+    }, {
+      "portRef" : "loadgenerator.frontend_out",
+      "connectorName" : "loadgenerator_to_frontend",
+      "direction" : "OUT"
+    }, {
+      "portRef" : "frontend.in",
+      "connectorName" : "loadgenerator_to_frontend",
+      "direction" : "IN"
+    } ],
+    "implementations" : [ {
+      "name" : "frontend-build",
+      "runtime" : "container",
+      "image" : "us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/frontend:v0.10.6",
+      "resources" : {
+        "cpu" : "200m",
+        "memory" : "128Mi"
+      },
+      "config" : { }
+    }, {
+      "name" : "adservice-build",
+      "runtime" : "container",
+      "image" : "us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/adservice:v0.10.6",
+      "resources" : {
+        "cpu" : "300m",
+        "memory" : "300Mi"
+      },
+      "config" : { }
+    }, {
+      "name" : "currencyservice-build",
+      "runtime" : "container",
+      "image" : "us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/currencyservice:v0.10.6",
+      "resources" : {
+        "cpu" : "200m",
+        "memory" : "128Mi"
+      },
+      "config" : { }
+    }, {
+      "name" : "cartservice-build",
+      "runtime" : "container",
+      "image" : "us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/cartservice:v0.10.6",
+      "resources" : {
+        "cpu" : "300m",
+        "memory" : "128Mi"
+      },
+      "config" : { }
+    }, {
+      "name" : "redis-cart-build",
+      "runtime" : "container",
+      "image" : "redis:alpine",
+      "resources" : {
+        "cpu" : "125m",
+        "memory" : "256Mi"
+      },
+      "config" : { }
+    }, {
+      "name" : "recommendationservice-build",
+      "runtime" : "container",
+      "image" : "us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/recommendationservice:v0.10.6",
+      "resources" : {
+        "cpu" : "200m",
+        "memory" : "450Mi"
+      },
+      "config" : { }
+    }, {
+      "name" : "checkoutservice-build",
+      "runtime" : "container",
+      "image" : "us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/checkoutservice:v0.10.6",
+      "resources" : {
+        "cpu" : "200m",
+        "memory" : "128Mi"
+      },
+      "config" : { }
+    }, {
+      "name" : "emailservice-build",
+      "runtime" : "container",
+      "image" : "us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/emailservice:v0.10.6",
+      "resources" : {
+        "cpu" : "200m",
+        "memory" : "128Mi"
+      },
+      "config" : { }
+    }, {
+      "name" : "paymentservice-build",
+      "runtime" : "container",
+      "image" : "us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/paymentservice:v0.10.6",
+      "resources" : {
+        "cpu" : "200m",
+        "memory" : "128Mi"
+      },
+      "config" : { }
+    }, {
+      "name" : "shippingservice-build",
+      "runtime" : "container",
+      "image" : "us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/shippingservice:v0.10.6",
+      "resources" : {
+        "cpu" : "200m",
+        "memory" : "128Mi"
+      },
+      "config" : { }
+    }, {
+      "name" : "productcatalogservice-build",
+      "runtime" : "container",
+      "image" : "us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/productcatalogservice:v0.10.6",
+      "resources" : {
+        "cpu" : "200m",
+        "memory" : "128Mi"
+      },
+      "config" : { }
+    }, {
+      "name" : "loadgenerator-build",
+      "runtime" : "container",
+      "image" : "us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/loadgenerator:v0.10.6",
+      "resources" : { },
+      "config" : { }
+    } ]
+  },
+  "security" : {
+    "attributes" : [ {
+      "name" : "Domain",
+      "values" : [ "frontend", "ads", "currency", "cart", "recommendation", "checkout", "email", "payment", "shipping", "catalog", "platform", "observability" ]
+    }, {
+      "name" : "DataClass",
+      "values" : [ "session" ]
+    } ],
+    "contexts" : [ {
+      "name" : "frontendCtx",
+      "conditions" : [ {
+        "attribute" : "Domain",
+        "value" : "frontend"
+      } ]
+    }, {
+      "name" : "checkoutCtx",
+      "conditions" : [ {
+        "attribute" : "Domain",
+        "value" : "checkout"
+      } ]
+    }, {
+      "name" : "paymentCtx",
+      "conditions" : [ {
+        "attribute" : "Domain",
+        "value" : "payment"
+      } ]
+    }, {
+      "name" : "sessionCtx",
+      "conditions" : [ {
+        "attribute" : "DataClass",
+        "value" : "session"
+      } ]
+    }, {
+      "name" : "viaCart",
+      "conditions" : [ {
+        "attribute" : "Domain",
+        "value" : "cart"
+      } ]
+    } ],
+    "rules" : [ {
+      "type" : "Isolation",
+      "sctx" : {
+        "name" : "sessionCtx"
+      },
+      "tctx" : {
+        "name" : "frontendCtx"
+      }
+    }, {
+      "type" : "Confidentiality",
+      "sctx" : {
+        "name" : "checkoutCtx"
+      },
+      "tctx" : {
+        "name" : "paymentCtx"
+      }
+    }, {
+      "type" : "Availability",
+      "target" : {
+        "name" : "frontendCtx"
+      },
+      "level" : "medium"
+    }, {
+      "type" : "Availability",
+      "target" : {
+        "name" : "checkoutCtx"
+      },
+      "level" : "medium"
+    } ]
+  },
+  "coverage" : {
+    "frontendCtx" : [ {
+      "name" : "frontend",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "frontend"
+      },
+      "ports" : [ "http_in", "in", "productcatalog_out", "currency_out", "cart_out", "recommendation_out", "shipping_out", "checkout_out", "ad_out" ]
+    } ],
+    "checkoutCtx" : [ {
+      "name" : "checkoutservice",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "checkout"
+      },
+      "ports" : [ "fe_in", "productcatalog_out", "shipping_out", "payment_out", "email_out", "currency_out", "cart_out" ]
+    } ],
+    "paymentCtx" : [ {
+      "name" : "paymentservice",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "payment"
+      },
+      "ports" : [ "checkout_in" ]
+    } ],
+    "sessionCtx" : [ {
+      "name" : "redis-cart",
+      "type" : "Data",
+      "attributes" : {
+        "Domain" : "cart",
+        "DataClass" : "session"
+      },
+      "ports" : [ "cart_in" ]
+    } ],
+    "viaCart" : [ {
+      "name" : "cartservice",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "cart"
+      },
+      "ports" : [ "fe_in", "checkout_in", "redis_out" ]
+    }, {
+      "name" : "redis-cart",
+      "type" : "Data",
+      "attributes" : {
+        "Domain" : "cart",
+        "DataClass" : "session"
+      },
+      "ports" : [ "cart_in" ]
+    } ]
+  },
+  "resolvedRules" : [ {
+    "type" : "Isolation",
+    "sctx" : [ {
+      "name" : "redis-cart",
+      "type" : "Data",
+      "attributes" : {
+        "Domain" : "cart",
+        "DataClass" : "session"
+      },
+      "ports" : [ "cart_in" ]
+    } ],
+    "tctx" : [ {
+      "name" : "frontend",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "frontend"
+      },
+      "ports" : [ "http_in", "in", "productcatalog_out", "currency_out", "cart_out", "recommendation_out", "shipping_out", "checkout_out", "ad_out" ]
+    } ],
+    "actx" : [ {
+      "name" : "cartservice",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "cart"
+      },
+      "ports" : [ "fe_in", "checkout_in", "redis_out" ]
+    }, {
+      "name" : "redis-cart",
+      "type" : "Data",
+      "attributes" : {
+        "Domain" : "cart",
+        "DataClass" : "session"
+      },
+      "ports" : [ "cart_in" ]
+    } ]
+  }, {
+    "type" : "Confidentiality",
+    "sctx" : [ {
+      "name" : "checkoutservice",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "checkout"
+      },
+      "ports" : [ "fe_in", "productcatalog_out", "shipping_out", "payment_out", "email_out", "currency_out", "cart_out" ]
+    } ],
+    "tctx" : [ {
+      "name" : "paymentservice",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "payment"
+      },
+      "ports" : [ "checkout_in" ]
+    } ],
+    "paths" : [ {
+      "connector" : "Checkout_to_Payment",
+      "sctxLinks" : [ {
+        "port" : "checkoutservice.payment_out",
+        "direction" : "out"
+      } ],
+      "tctxLinks" : [ {
+        "port" : "paymentservice.checkout_in",
+        "direction" : "in"
+      } ]
+    } ]
+  }, {
+    "type" : "Availability",
+    "sctx" : [ {
+      "name" : "frontend",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "frontend"
+      },
+      "ports" : [ "http_in", "in", "productcatalog_out", "currency_out", "cart_out", "recommendation_out", "shipping_out", "checkout_out", "ad_out" ]
+    } ]
+  }, {
+    "type" : "Availability",
+    "sctx" : [ {
+      "name" : "checkoutservice",
+      "type" : "App",
+      "attributes" : {
+        "Domain" : "checkout"
+      },
+      "ports" : [ "fe_in", "productcatalog_out", "shipping_out", "payment_out", "email_out", "currency_out", "cart_out" ]
+    } ]
+  } ]
+}
