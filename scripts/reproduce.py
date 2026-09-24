@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Reproduce every number in RESULTS.md and FINDINGS.md from scratch.
+Reproduce every number in RESULTS.md from scratch.
 
 Usage:
     python3 scripts/reproduce.py /path/to/sam4c-cli.jar
@@ -51,8 +51,11 @@ def run(arch, rules):
     return ("Conformance OK" in out), warns, c
 
 
-# expected findings per check, one real system at a time (regression baseline,
-# matches RESULTS.md and FINDINGS.md)
+# The expected findings per check, one real system at a time. This is not a
+# comparison against another tool (no such baseline exists yet, see
+# METHODOLOGY.md section 8) -- it's the already-verified output from
+# FINDINGS.md, copied here so a future run can be checked against it and any
+# drift is caught, not missed.
 SYSTEMS = {
     "bank-of-anthos":     {"unauthenticated entry": 1, "plaintext channel": 3, "insufficient replicas": 1},
     "hotel-reservation":  {"unauthenticated entry": 1, "insufficient replicas": 4},
@@ -61,23 +64,6 @@ SYSTEMS = {
     "social-network":     {"unauthenticated entry": 2, "isolation violated": 1, "insufficient replicas": 12},
     "sock-shop":          {"unauthenticated entry": 1, "isolation violated": 1, "plaintext channel": 1, "insufficient replicas": 5},
     "teastore":           {"unauthenticated entry": 1, "authentication bypass": 1, "insufficient replicas": 1},
-}
-
-# pilot: the vulnerable variant must raise exactly this set of checks, the
-# fixed variant must be silent
-PILOT = {
-    "c1-cwe400-availability": {"insufficient replicas", "no zone spread"},
-    "c2-cwe668-isolation": {"isolation violated"},
-    "c3-cwe306-missing-auth": {"unauthenticated entry"},
-    "c4-cwe200-exposed-data": {"unauthenticated entry", "exposed data store"},
-    "c5-cwe668-accidental": {"unintended exposure"},
-    "c6-cwe862-authz-noauthn": {"access without authn"},
-    "c7-contradiction-iso-conf": {"contradictory policy"},
-    "c8-multihop-mediator": {"isolation violated"},
-    "c9-cwe306-token-at-target": {"authentication bypass"},
-    "c10-cwe319-plaintext": {"plaintext channel"},
-    "c11-cwe923-weakhop-chain": {"isolation violated", "unauthenticated entry"},
-    "c12-vacuous-resolution": {"vacuous resolution"},
 }
 
 fail = 0
@@ -101,15 +87,6 @@ for s, exp in SYSTEMS.items():
     check(ok, f"{s}: conformance")
     check(dict(c) == exp and sum(exp.values()) == len(warns), f"{s}: {len(warns)} findings {dict(c)}")
 check(tot == 45, f"total findings = {tot} (expected 45)")
-
-print("\n== tool validation pilot (vulnerable raises exactly the intended check, fixed is silent) ==")
-covered = set()
-for p, want in PILOT.items():
-    okv, wv, cv = run(f"{ROOT}/tool-validation-pilot/{p}/vuln.arch.yaml", f"{ROOT}/tool-validation-pilot/{p}/vuln.secdsl")
-    okf, wf, cf = run(f"{ROOT}/tool-validation-pilot/{p}/fixed.arch.yaml", f"{ROOT}/tool-validation-pilot/{p}/fixed.secdsl")
-    check(okv and okf and set(cv) == want and len(wf) == 0, f"{p}: vulnerable {sorted(cv)} / fixed {len(wf)} findings")
-    covered |= set(cv)
-check(len(covered) == 11, f"checks exercised by the pilot: {len(covered)}/11")
 
 print(f"\n{n - fail}/{n} checks passed")
 sys.exit(1 if fail else 0)

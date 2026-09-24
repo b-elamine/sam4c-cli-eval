@@ -1,3 +1,0 @@
-// no Authentication rule -> the exposed admin API is unauthenticated by design
-#attribute Domain = (admin);
-#context adminCtx = (Domain=admin);

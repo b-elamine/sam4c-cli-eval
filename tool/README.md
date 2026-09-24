@@ -34,12 +34,11 @@ java -jar target/sam4c-cli.jar --validate <arch.yaml> <rules.secdsl>
 python3 scripts/reproduce.py /path/to/sam4c-cli.jar
 ```
 
-from the root of this evaluation folder. Expect `28/28 checks passed`.
+from the root of this evaluation folder. Expect `15/15 checks passed`.
 
 ## What changed at this commit, relevant to the evaluation
 
-Two fixes were made to the tool while building this evaluation, both tested
-by the pilot pairs in `tool-validation-pilot/`:
+Two fixes were made to the tool while building this evaluation:
 
 - Authentication now counts a component that shares a credential with the
   authenticator as verifying the token itself, instead of requiring the

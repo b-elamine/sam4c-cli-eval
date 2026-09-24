@@ -1,4 +1,0 @@
-#attribute Domain = (admin, database);
-#context adminCtx = (Domain=admin);
-#context dbCtx = (Domain=database);
-#property Authorization(adminCtx, dbCtx, read, write);

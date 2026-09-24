@@ -17,7 +17,7 @@ cat tool/README.md
 python3 scripts/reproduce.py /path/to/sam4c-cli.jar
 ```
 
-Expect `28/28 checks passed`.
+Expect `15/15 checks passed`.
 
 ## Where everything is
 
@@ -32,11 +32,9 @@ Expect `28/28 checks passed`.
 | `real-systems/inputs/manifests/` | the ground-truth deployment file each model was built from, vendored verbatim at its real repo path |
 | `real-systems/inputs/evidence/` | the service source files cited as finding evidence, vendored verbatim at their real repo path |
 | `real-systems/outputs/` | the tool's raw JSON output per system (the tool's output) |
-| `tool-validation-pilot/` | 12 hand-built vulnerable/fixed pairs used to sanity-check the tool's mechanics, kept separate from the real-system results |
-| `eval-tables/` | the same results as paper-ready LaTeX tables (tex/pdf/png) |
+| `eval-tables/` | the same results as paper-ready LaTeX tables (tex/pdf/png); a static export, nothing here regenerates it |
 | `tool/README.md` | the exact tool commit this evaluation was run against, and how to build it |
-| `scripts/reproduce.py` | one command that rebuilds every number in `RESULTS.md` from the inputs |
-| `scripts/run-all-tests.py` | the original regression runner, kept for reference (assumes the sam4c-cli repo layout; `reproduce.py` is the version to use here) |
+| `scripts/reproduce.py` | the one and only script here: rebuilds every number in `RESULTS.md` from the inputs |
 
 ## Headline numbers
 
@@ -45,8 +43,7 @@ Expect `28/28 checks passed`.
 | Systems modeled | 7 (113 deployables, 199 connectors, 390 links, 26 rules) |
 | Findings | 45, on real default configurations, none injected |
 | Confirmed in source | 39 of 45 (87%); 44 of 45 (98%) are real facts about the design |
-| Mutation pilot | 12 of 12 flagged, 12 of 12 clean, all 11 checks covered |
-| Reproduce check | 28 of 28 pass (`scripts/reproduce.py`) |
+| Reproduce check | 15 of 15 pass (`scripts/reproduce.py`) |
 
 ## The 7 systems
 

@@ -1,5 +1,0 @@
-#attribute Domain = (frontend, backend, database);
-#context frontendCtx = (Domain=frontend);
-#context backendCtx  = (Domain=backend);
-#context dbCtx       = (Domain=database);
-#property Isolation(dbCtx, frontendCtx, backendCtx);

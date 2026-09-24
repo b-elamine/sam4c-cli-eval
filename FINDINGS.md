@@ -6,7 +6,7 @@ Every deployment manifest cited below is vendored verbatim in `real-systems/inpu
 
 ## Tool change made during this check
 
-Authentication now counts a component that shares a credential with the authenticator as verifying the token itself (`SemanticValidator.sharingCredential`). Before, only an authenticator physically on the path counted, which wrongly reported token-based systems such as Bank of Anthos. Pilot pair c9 tests it.
+Authentication now counts a component that shares a credential with the authenticator as verifying the token itself (`SemanticValidator.sharingCredential`). Before, only an authenticator physically on the path counted, which wrongly reported token-based systems such as Bank of Anthos.
 
 A second fix: in an Isolation rule with `via`, a mediator that is also the source or target of the rule no longer disables the search silently (found when a `via` rule on Sock Shop returned nothing).
 

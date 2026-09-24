@@ -1,5 +1,0 @@
-#attribute Domain = (frontend, auth, api);
-#context feCtx = (Domain=frontend);
-#context authCtx = (Domain=auth);
-#context apiCtx = (Domain=api);
-#property Authentication(feCtx, authCtx) -> apiCtx;

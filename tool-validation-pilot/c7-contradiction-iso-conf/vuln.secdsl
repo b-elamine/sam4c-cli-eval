@@ -1,5 +1,0 @@
-#attribute Domain = (frontend, database);
-#context frontendCtx = (Domain=frontend);
-#context dbCtx = (Domain=database);
-#property Isolation(dbCtx, frontendCtx);
-#property Confidentiality(dbCtx, frontendCtx);

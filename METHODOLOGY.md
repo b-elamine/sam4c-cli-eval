@@ -26,7 +26,8 @@ for:
   deployment file before any check was run against them.
 
 No production or proprietary systems, no systems modified to contain a known
-CVE for this evaluation (that is a separate, smaller pilot, see section 6).
+CVE — every number in this evaluation comes from a real, unmodified system
+(see section 7 for what that means this evaluation does not measure).
 
 ## 3. Modeling protocol: from git to the two model files
 
@@ -35,18 +36,18 @@ Each system becomes one `.arch.yaml` (architecture) and one `.secdsl`
 is a manual process; step 9 and part of step 10 are judgment calls, everything
 else is a direct read of the repo.
 
-| Step | Source in git | What it becomes in the model |
-|---|---|---|
-| 1 | One ground-truth deployment file per system (the Kubernetes manifest or `docker-compose.yml` actually shipped in the repo) | one `Architecture` named after the system |
-| 2 | Nothing — manifests do not say which machine runs a pod | one `Worker` host (the cluster or compose host); every deployable's `deployedOn` points at it |
-| 3 | Every Kubernetes Deployment/StatefulSet, every Compose service | one `Deployable` each: `Data` if the image is a database, cache or broker (mongo, postgres, mariadb, redis, memcached, rabbitmq), else `App` |
-| 4 | Kubernetes `Service.type` (LoadBalancer/NodePort), Compose `ports:` | `exposure: external` only for the system's intended public entry point; everything else `internal` (Compose dev-UI host-port mappings, e.g. jaeger, consul, flagd-ui, stay `internal`, noted in the model header) |
-| 5 | `containerPort`, Compose `ports`, the known protocol of the image | one `Port` per endpoint, with number and protocol (`http`, `grpc`, `tcp` for databases/Thrift, `udp` for the jaeger agent) |
-| 6 | Env vars/ConfigMaps naming another service, Compose `depends_on`, then the service source code where the manifest is silent | one `Connector` per directed call, one outbound `Link` on the caller, one inbound `Link` on the callee |
-| 7 | `image:` | one `Implementation` per deployable |
-| 8 | Volumes | `persistent: true` only if the data volume outlives the pod (PVC, `volumeClaimTemplate`, `hostPath`, named Compose volume); `emptyDir`, no volume, or an init-script-only mount is not persistent |
-| 9 | The author, reading the system | `Domain` attribute (business role) and `DataClass` on sensitive stores — the first judgment call |
-| 10 | The author, one rubric applied identically to all 7 (see section 4) | the `.secdsl` rule set |
+| Step | Source in git                                                                                                               | What it becomes in the model                                                                                                                                                                                      |
+| ---- | --------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | One ground-truth deployment file per system (the Kubernetes manifest or `docker-compose.yml` actually shipped in the repo)  | one `Architecture` named after the system                                                                                                                                                                         |
+| 2    | Nothing, manifests do not say which machine runs a pod                                                                      | one `Worker` host (the cluster or compose host); every deployable's `deployedOn` points at it                                                                                                                     |
+| 3    | Every Kubernetes Deployment/StatefulSet, every Compose service                                                              | one `Deployable` each: `Data` if the image is a database, cache or broker (mongo, postgres, mariadb, redis, memcached, rabbitmq), else `App`                                                                      |
+| 4    | Kubernetes `Service.type` (LoadBalancer/NodePort), Compose `ports:`                                                         | `exposure: external` only for the system's intended public entry point; everything else `internal` (Compose dev-UI host-port mappings, e.g. jaeger, consul, flagd-ui, stay `internal`, noted in the model header) |
+| 5    | `containerPort`, Compose `ports`, the known protocol of the image                                                           | one `Port` per endpoint, with number and protocol (`http`, `grpc`, `tcp` for databases/Thrift, `udp` for the jaeger agent)                                                                                        |
+| 6    | Env vars/ConfigMaps naming another service, Compose `depends_on`, then the service source code where the manifest is silent | one `Connector` per directed call, one outbound `Link` on the caller, one inbound `Link` on the callee                                                                                                            |
+| 7    | `image:`                                                                                                                    | one `Implementation` per deployable                                                                                                                                                                               |
+| 8    | Volumes                                                                                                                     | `persistent: true` only if the data volume outlives the pod (PVC, `volumeClaimTemplate`, `hostPath`, named Compose volume); `emptyDir`, no volume, or an init-script-only mount is not persistent                 |
+| 9    | The author, reading the system                                                                                              | `Domain` attribute (business role) and `DataClass` on sensitive stores — the first judgment call                                                                                                                  |
+| 10   | The author, one rubric applied identically to all 7 (see section 4)                                                         | the `.secdsl` rule set                                                                                                                                                                                            |
 
 Full worked example (Online Boutique `frontend`): the Service
 `frontend-external` is `type: LoadBalancer`, so `exposure: external`; the
@@ -179,17 +180,7 @@ Result: 45 findings, 39 Confirmed, 4 Partial, 1 By design, 1 Model artifact.
 The labelling was done by one person (the tool's author) reading the source;
 there is no second, independent labeller yet (see section 7).
 
-## 7. Tool validation: the mutation pilot
-
-Separately from the 7 real systems, `tool-validation-pilot/` holds 12
-hand-built vulnerable/fixed model pairs, one per check family, each pair
-differing by exactly one fact (`c1`..`c12`, see
-`tool-validation-pilot/methodology.md`). Each pair checks that the tool
-fires on the fault and stays silent on the fix. This is a sanity check on
-the tool's mechanics, not part of the real-system evidence, and is kept in
-a separate folder so the two are never mixed in a results table.
-
-## 8. What this evaluation does not measure (state plainly)
+## 7. What this evaluation does not measure (state plainly)
 
 - **Recall.** Only precision is measured (of what the tool reports, how much
   is true). Nothing here measures what the tool misses.
@@ -200,13 +191,17 @@ a separate folder so the two are never mixed in a results table.
 - **Scale beyond 7.** All 7 models are hand-built; nothing here validates an
   automatic importer at larger scale.
 - **Zone spread.** `Availability` is `medium` everywhere, so the
-  zone-spread half of the Availability check is exercised by the pilot only,
-  not by any of the 7 real systems.
+  zone-spread half of the Availability check is not exercised anywhere in
+  this folder.
+- **Sanity-check pairs.** An earlier version of this folder had 12
+  hand-built vulnerable/fixed model pairs (a mutation-style sanity check on
+  the tool's mechanics, not real-system evidence). Dropped, so nothing here
+  is a synthetic example — every number comes from a real system only.
 
-## 9. Reproducing this evaluation
+## 8. Reproducing this evaluation
 
 See `README.md` for the exact commands. In short: build the tool at the
 pinned commit (`tool/README.md`), then run
 `python3 scripts/reproduce.py <path-to-jar>` from this folder's root. It
 re-derives every finding count in `RESULTS.md` from `real-systems/inputs/`
-and re-checks all 12 pilot pairs, and exits non-zero if anything drifts.
+and exits non-zero if anything drifts.

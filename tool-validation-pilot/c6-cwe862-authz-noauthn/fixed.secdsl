@@ -1,7 +1,0 @@
-#attribute Domain = (admin, database, auth);
-#attribute Mechanism = (oidc);
-#context adminCtx = (Domain=admin);
-#context dbCtx = (Domain=database);
-#context mechCtx = (Mechanism=oidc);
-#property Authentication(adminCtx, mechCtx) -> dbCtx;
-#property Authorization(adminCtx, dbCtx, read, write);

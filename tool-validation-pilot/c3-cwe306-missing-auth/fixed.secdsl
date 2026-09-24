@@ -1,5 +1,0 @@
-#attribute Domain = (admin, auth);
-#attribute Mechanism = (oidc);
-#context adminCtx = (Domain=admin);
-#context mechCtx = (Mechanism=oidc);
-#property Authentication(adminCtx, mechCtx) -> adminCtx;

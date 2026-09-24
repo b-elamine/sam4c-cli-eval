@@ -1,8 +1,8 @@
 # Results
 
-2026-09-20 | tool `sam4c-cli` | test status: **28 / 28 pass** (`python3 private/run-all-tests.py`)
+2026-09-20, re-verified 2026-09-24 | tool `sam4c-cli` at commit `9850fbd564c0e9db9504627f53f99ce12268a978` | test status: **15 / 15 pass** (`python3 scripts/reproduce.py <path-to-jar>`)
 
-**45 findings on 7 real systems, 39 confirmed in the systems' own source. 12 of 12 mutation pairs detected, 11 of 11 checks tested.**
+**45 findings on 7 real systems, 39 confirmed in the systems' own source, none injected.**
 
 ## 1. Setup
 
@@ -63,25 +63,7 @@ C = confirmed | P = partial (exposure true, the app has a login on some routes) 
 
 Every finding with its `path:line` evidence: `findings-explained.md`.
 
-## 5. Mutation pilot (each pair differs by one architectural fact)
-
-| Pair | Fault | Intended check | Vulnerable | Fixed |
-|---|---|---|---|---|
-| c1 | one replica, one zone | replicas, zone spread | flagged (2) | clean |
-| c2 | shared connector between isolated sides | isolation | flagged (1) | clean |
-| c3 | external component, no authentication | unauthenticated entry | flagged (1) | clean |
-| c4 | data store exposed externally | exposed data store | flagged (2) | clean |
-| c5 | declared internal, wired external | unintended exposure | flagged (1) | clean |
-| c6 | authorization on an unauthenticated resource | access without authn | flagged (1) | clean |
-| c7 | isolation and confidentiality on the same pair | contradictory policy | flagged (1) | clean |
-| c8 | path that bypasses the approved mediator | isolation (via) | flagged (1) | clean |
-| c9 | target does not verify the token, path bypasses the authenticator | authentication bypass | flagged (1) | clean |
-| c10 | http on a confidential channel | plaintext channel | flagged (1) | clean |
-| c11 | multi-hop path through an exposed unauthenticated component | isolation (weak-hop chain) | flagged (2) | clean |
-| c12 | context that matches no component | vacuous resolution | flagged (2) | clean |
-| **Result** | | **11 / 11 checks** | **12/12 flagged** | **12/12 clean** |
-
-## 6. Models checked against the repos
+## 5. Models checked against the repos
 
 | System | Units in repo = modeled | Edges: deployment file / service code / config | Corrected in the models |
 |---|---|---|---|
@@ -94,21 +76,16 @@ Every finding with its `path:line` evidence: `findings-explained.md`.
 | TS | 7 | 6 / 7 / 0 = 13 | 1 flag, +3 edges |
 | **Total** | **113** | **118 / 57 / 16 = 191** | 24 units, 14 flags, 6 edges removed, 31 added, 2 ports |
 
-## 7. Reproduce
-
-This file lived inside the sam4c-cli repo originally; the commands below are
-from that context. From this evaluation folder, use
-`python3 scripts/reproduce.py <path-to-jar>` instead (see the top-level
-README.md).
+## 6. Reproduce
 
 ```
-mvn -q -DskipTests package                       # build, from the sam4c-cli repo
-python3 private/run-all-tests.py                # 28 tests, from the sam4c-cli repo
-java -jar target/sam4c-cli.jar --validate private/case-study/<system>.arch.yaml private/case-study/<system>.secdsl
+cat tool/README.md                                       # build the tool at the pinned commit
+python3 scripts/reproduce.py /path/to/sam4c-cli.jar       # 15 checks, from this folder's root
 ```
 
-## 8. Limits
+## 7. Limits
 
 - Findings were checked by the author, not an independent labeller. Recall on real systems is not measured.
-- Multi-hop `Isolation` with `via` is used on all 7 real systems (2 findings, 5 silent). Weak-hop chaining (no `via`) is tested by the pilot only.
-- `Availability medium` everywhere, so zone spread is exercised by the pilot only.
+- Multi-hop `Isolation` with `via` is used on all 7 real systems (2 findings, 5 silent). Weak-hop chaining (no `via`) is not exercised anywhere in this folder.
+- `Availability medium` everywhere, so zone spread is not exercised anywhere in this folder.
+- No baseline comparison against an existing config scanner yet, and no synthetic/mutation examples — every number here comes from a real, unmodified system.
